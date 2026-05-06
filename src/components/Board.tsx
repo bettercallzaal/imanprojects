@@ -756,7 +756,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
           </li>
           <li>
             <b className="text-white">Set priority</b>: click the colored dot on the left of any
-            card to cycle P1 -> P2 -> P3.
+            card to cycle P1 {"->"} P2 {"->"} P3.
           </li>
           <li>
             <b className="text-white">Edit details</b>: click the title or "edit" to open full
