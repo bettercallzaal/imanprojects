@@ -1,0 +1,61 @@
+{
+  "updatedAt": "2026-05-06T00:00:00.000Z",
+  "items": [
+    {
+      "id": "1",
+      "title": "Finalize action tracker (this app + Google Sheet)",
+      "owner": "Zaal",
+      "status": "WIP",
+      "due": "2026-05-06",
+      "notes": "App live. Sheet pending import."
+    },
+    {
+      "id": "2",
+      "title": "Review current ZAO Devz website",
+      "owner": "Iman + Zaal",
+      "status": "TODO",
+      "due": "Wed session",
+      "notes": "Walk site, list gaps, prioritize fixes"
+    },
+    {
+      "id": "3",
+      "title": "Social media chat + record",
+      "owner": "Iman + Zaal",
+      "status": "TODO",
+      "due": "Wed session",
+      "notes": "Record convo for reuse as content"
+    },
+    {
+      "id": "4",
+      "title": "Teach Iman to post via ZAO OS",
+      "owner": "Zaal",
+      "status": "TODO",
+      "due": "Wed session",
+      "notes": "Onboard Iman onto ZAO accounts. Doc in SOCIAL-PLAYBOOK.md"
+    },
+    {
+      "id": "5",
+      "title": "Host public Space - ZAO Devz / WaveWarZ Zambia / Iman projects",
+      "owner": "Iman + Zaal",
+      "status": "TODO",
+      "due": "TBD",
+      "notes": "Pick date, announce on Farcaster + X"
+    },
+    {
+      "id": "6",
+      "title": "POIDH bounty for next funds-sharing round",
+      "owner": "Zaal",
+      "status": "TODO",
+      "due": "Pre-Space",
+      "notes": "Draft in BOUNTY-POIDH.md. Open for community top-ups."
+    },
+    {
+      "id": "7",
+      "title": "Add tracker module into ZAO OS",
+      "owner": "Zaal",
+      "status": "TODO",
+      "due": "After app stable",
+      "notes": "Replace this app with native ZAO OS view"
+    }
+  ]
+}
