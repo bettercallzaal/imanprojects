@@ -7,11 +7,12 @@ import {
   PHASES,
   CATEGORIES,
   OWNERS,
+  ageDays,
+  cycleDays,
   type ActionItem,
   type ActionStatus,
   type Priority,
-  type Phase,
-} from "@/lib/data";
+} from "@/lib/types";
 import {
   quickCreate,
   patchField,
@@ -54,17 +55,6 @@ const CATEGORY_COLOR: Record<string, string> = {
   Bounty: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
   Other: "bg-slate-500/15 text-slate-300 border-slate-500/30",
 };
-
-function ageDays(createdAt: string): number {
-  const ms = Date.now() - new Date(createdAt).getTime();
-  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
-}
-
-function cycleDays(it: ActionItem): number | null {
-  if (it.status !== "DONE") return null;
-  const ms = new Date(it.updatedAt).getTime() - new Date(it.createdAt).getTime();
-  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
-}
 
 function ownerInitial(o: string): string {
   if (!o) return "?";
@@ -416,7 +406,7 @@ function QuickAddForm({ status }: { status: ActionStatus }) {
 function Card({ item, onEdit }: { item: ActionItem; onEdit: (id: string) => void }) {
   const [pending, start] = useTransition();
   const age = ageDays(item.createdAt);
-  const cyc = cycleDays(item);
+  const cyc = cycleDays(item.createdAt, item.updatedAt, item.status);
   const aging = item.status !== "DONE" && age > 14;
   const ownerStr = String(item.owner);
 
