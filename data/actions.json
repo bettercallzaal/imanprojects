@@ -3,59 +3,120 @@
   "items": [
     {
       "id": "1",
-      "title": "Finalize action tracker (this app + Google Sheet)",
+      "title": "Finalize action tracker w/ kanban + Six Sigma structure",
       "owner": "Zaal",
       "status": "WIP",
+      "category": "Site / Tech",
+      "priority": "P1",
+      "phase": "Improve",
       "due": "2026-05-06",
-      "notes": "App live. Sheet pending import."
+      "notes": "Customer: Iman + Zaal\nSuccess: shared tracker, easy to use on phone, both edit live\nPhase 2-10 queued in BACKLOG.md",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
     },
     {
       "id": "2",
-      "title": "Review current ZAO Devz website",
-      "owner": "Iman + Zaal",
+      "title": "Review current ZAO Devz website for builder UX gaps",
+      "owner": "Both",
       "status": "TODO",
+      "category": "ZAO Devz",
+      "priority": "P1",
+      "phase": "Measure",
       "due": "Wed session",
-      "notes": "Walk site, list gaps, prioritize fixes"
+      "notes": "Customer: builders evaluating ZAO\nWalk site together, list broken/confusing areas, prioritize fixes",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
     },
     {
       "id": "3",
-      "title": "Social media chat + record",
-      "owner": "Iman + Zaal",
+      "title": "Social media chat + record session",
+      "owner": "Both",
       "status": "TODO",
+      "category": "Social",
+      "priority": "P2",
+      "phase": "Define",
       "due": "Wed session",
-      "notes": "Record convo for reuse as content"
+      "notes": "Record convo, reuse as content. Topics: ZAO accounts, voice, cadence, who posts what.",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
     },
     {
       "id": "4",
-      "title": "Teach Iman to post via ZAO OS",
+      "title": "Onboard Iman to post via ZAO OS",
       "owner": "Zaal",
       "status": "TODO",
+      "category": "Social",
+      "priority": "P1",
+      "phase": "Improve",
       "due": "Wed session",
-      "notes": "Onboard Iman onto ZAO accounts. Doc in SOCIAL-PLAYBOOK.md"
+      "notes": "Customer: ZAO community + Iman\nGive Iman access to ZAO accounts via ZAO OS. Walk thru posting flow. Doc the steps.",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
     },
     {
       "id": "5",
       "title": "Host public Space - ZAO Devz / WaveWarZ Zambia / Iman projects",
-      "owner": "Iman + Zaal",
+      "owner": "Both",
       "status": "TODO",
+      "category": "Social",
+      "priority": "P2",
+      "phase": "Define",
       "due": "TBD",
-      "notes": "Pick date, announce on Farcaster + X"
+      "notes": "Pick date + host platform (X Space or FC). Announce 1 week ahead on FC + X.",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
     },
     {
       "id": "6",
-      "title": "POIDH bounty for next funds-sharing round",
+      "title": "POIDH bounty - next funds-sharing round",
       "owner": "Zaal",
       "status": "TODO",
+      "category": "Bounty",
+      "priority": "P2",
+      "phase": "Define",
       "due": "Pre-Space",
-      "notes": "Draft in BOUNTY-POIDH.md. Open for community top-ups."
+      "notes": "Customer: contributors + observers\nDraft bounty terms. Open for community top-ups so anyone can chip in. Show fairness on FC.",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
     },
     {
       "id": "7",
-      "title": "Add tracker module into ZAO OS",
+      "title": "Set up imanagent on existing VPS",
       "owner": "Zaal",
       "status": "TODO",
+      "category": "Site / Tech",
+      "priority": "P3",
+      "phase": "Define",
+      "due": "After Phase 2",
+      "notes": "See BACKLOG.md Phase 4. Hermes-style agent. Daily summary post + inbox watcher candidates.",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
+    },
+    {
+      "id": "8",
+      "title": "Migrate tracker to Supabase",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Site / Tech",
+      "priority": "P2",
+      "phase": "Define",
+      "due": "TBD",
+      "notes": "See BACKLOG.md Phase 2. Enables instant saves + realtime + bot API.",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
+    },
+    {
+      "id": "9",
+      "title": "Port tracker into ZAO OS as native module",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Site / Tech",
+      "priority": "P3",
+      "phase": "Define",
       "due": "After app stable",
-      "notes": "Replace this app with native ZAO OS view"
+      "notes": "Final form. See BACKLOG.md Phase 10.",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
     }
   ]
 }

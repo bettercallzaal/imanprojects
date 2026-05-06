@@ -27,36 +27,41 @@ export default async function LoginPage({
     <main className="min-h-screen flex items-center justify-center bg-zao-navy text-white px-4">
       <form
         action={loginAction}
-        className="w-full max-w-sm space-y-4 rounded-2xl bg-zao-ink p-6 shadow-xl border border-white/10"
+        className="w-full max-w-sm space-y-5 rounded-2xl bg-zao-ink p-7 shadow-2xl border border-white/10"
       >
-        <div>
-          <h1 className="text-2xl font-bold">Iman x Zaal</h1>
-          <p className="text-sm text-white/60 mt-1">ZAO Devz action tracker</p>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Iman x Zaal</h1>
+          <p className="text-sm text-white/55">ZAO Devz action tracker</p>
         </div>
         <input type="hidden" name="from" value={from} />
         <label className="block">
-          <span className="text-sm text-white/80">Password</span>
+          <span className="text-xs uppercase tracking-wider text-white/60">Password</span>
           <input
             name="password"
             type="password"
             autoFocus
             required
-            className="mt-1 w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-zao-accent"
+            className="mt-1.5 w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2.5 text-white placeholder-white/30 focus:outline-none focus:border-zao-accent focus:ring-1 focus:ring-zao-accent/40"
             placeholder="enter password"
           />
         </label>
         {error && (
-          <p className="text-sm text-red-400">Wrong password. Try again.</p>
+          <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+            Wrong password. Try again.
+          </p>
         )}
         <button
           type="submit"
-          className="w-full rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 font-medium transition"
+          className="w-full rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2.5 font-medium transition"
         >
           Sign in
         </button>
-        <p className="text-xs text-white/40">
-          Two users: Zaal + Iman. Passwords set by site admin.
-        </p>
+        <div className="pt-2 border-t border-white/10 space-y-1.5 text-xs text-white/45">
+          <p>Two users: Zaal + Iman. Each has their own password.</p>
+          <p>
+            New here? Ask Zaal for ur password. Forgot it? Same.
+          </p>
+        </div>
       </form>
     </main>
   );

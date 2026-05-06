@@ -11,6 +11,17 @@ export default {
           accent: "#3b82f6",
         },
       },
+      fontFamily: {
+        sans: [
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
+      },
     },
   },
   plugins: [],
