@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   STATUSES,
   PRIORITIES,
@@ -11,6 +12,7 @@ import {
   cycleDays,
   type ActionItem,
   type ActionStatus,
+  type Owner,
   type Priority,
 } from "@/lib/types";
 import {
@@ -82,11 +84,152 @@ const EMPTY_FILTERS: Filters = {
   agingOnly: false,
 };
 
+function parseDueDate(raw: string): Date | null {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (!m) return null;
+  const d = new Date(`${m[1]}T00:00:00Z`);
+  if (!Number.isFinite(d.getTime())) return null;
+  return d;
+}
+
+const TOUR_STEPS: Array<{ title: string; lines: string[] }> = [
+  {
+    title: "Welcome to The Zao Co-Works",
+    lines: [
+      "This is your shared action tracker with your co-worker.",
+      "You can add tasks, assign responsibility, set priority + tags, and track progress.",
+    ],
+  },
+  {
+    title: "Add tasks (fast)",
+    lines: [
+      "Use the “+ add item” box at the top of any column and press Enter.",
+      "Set Responsible, Priority, and Important/Urgent tags before submitting.",
+    ],
+  },
+  {
+    title: "Move tasks",
+    lines: [
+      "Use the status dropdown on each card to move it across columns.",
+      "Mark a task DONE when it’s complete.",
+    ],
+  },
+  {
+    title: "Edit details",
+    lines: [
+      "Click the task title or “edit” to open full edit mode.",
+      "Set owner, status, category, priority, tags, DMAIC phase, due date, and notes.",
+    ],
+  },
+  {
+    title: "Work smart",
+    lines: [
+      "Use filters at the top (Mine, Aging, Owner, Category, Priority, DMAIC).",
+      "Tasks sort by tags first: Important+Urgent → Urgent → Important → others.",
+    ],
+  },
+];
+
 export function Board({ items, currentUser }: { items: ActionItem[]; currentUser: string }) {
+  const router = useRouter();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [activeMobileStatus, setActiveMobileStatus] = useState<ActionStatus>("TODO");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const [dailyOpen, setDailyOpen] = useState(false);
+  const [toast, setToast] = useState<{ title: string; message: string } | null>(null);
+  const prevById = useRef<Map<string, ActionItem>>(new Map());
+
+  const userLabel =
+    currentUser.trim().toLowerCase() === "zaal"
+      ? "Zaal"
+      : currentUser.trim().toLowerCase() === "iman"
+      ? "Iman"
+      : currentUser;
+  const storageUserKey = userLabel.trim().toLowerCase() || "user";
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  useEffect(() => {
+    const id = window.setInterval(() => router.refresh(), 120_000);
+    return () => window.clearInterval(id);
+  }, [router]);
+
+  useEffect(() => {
+    const key = `zao-cowork-welcome-v1:${storageUserKey}`;
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(key) === "1") return;
+    setWelcomeOpen(true);
+  }, [storageUserKey]);
+
+  useEffect(() => {
+    const lastSeenKey = `zao-cowork-last-seen:${storageUserKey}`;
+    const lastSeenRaw = typeof window === "undefined" ? "" : window.localStorage.getItem(lastSeenKey) || "";
+    const lastSeenMs = lastSeenRaw ? new Date(lastSeenRaw).getTime() : 0;
+
+    const mine = storageUserKey;
+    const openMine = items.filter((it) => {
+      if (it.status === "DONE") return false;
+      const o = String(it.owner).toLowerCase();
+      return o === mine || o === "both";
+    });
+    const overdueMine = openMine.filter((it) => {
+      const due = parseDueDate(it.due);
+      if (!due) return false;
+      const dueDay = due.toISOString().slice(0, 10);
+      return dueDay < todayKey;
+    });
+    const completedByCoworker = items.filter((it) => {
+      if (it.status !== "DONE") return false;
+      if (!it.completedAt) return false;
+      const doneMs = new Date(it.completedAt).getTime();
+      if (!Number.isFinite(doneMs) || doneMs <= lastSeenMs) return false;
+      const created = String(it.createdBy || "").toLowerCase();
+      const completedBy = String(it.completedBy || "").toLowerCase();
+      return created === mine && completedBy && completedBy !== mine;
+    });
+
+    const dailyKey = `zao-cowork-daily-v1:${storageUserKey}`;
+    const shownFor = typeof window === "undefined" ? "" : window.localStorage.getItem(dailyKey) || "";
+    if (shownFor !== todayKey && (openMine.length > 0 || overdueMine.length > 0 || completedByCoworker.length > 0)) {
+      setDailyOpen(true);
+      window.localStorage.setItem(dailyKey, todayKey);
+    }
+    window.localStorage.setItem(lastSeenKey, new Date().toISOString());
+  }, [items, storageUserKey, todayKey]);
+
+  useEffect(() => {
+    const prev = prevById.current;
+    const next = new Map<string, ActionItem>();
+    for (const it of items) {
+      next.set(it.id, it);
+      const before = prev.get(it.id);
+      if (!before) continue;
+      if (before.status !== "DONE" && it.status === "DONE") {
+        const mine = storageUserKey;
+        const created = String(it.createdBy || "").toLowerCase();
+        const completedBy = String(it.completedBy || "").toLowerCase();
+        if (created === mine && completedBy && completedBy !== mine) {
+          setToast({
+            title: "Task completed",
+            message: `${it.owner} completed: ${it.title}`,
+          });
+        }
+      }
+    }
+    prevById.current = next;
+  }, [items, storageUserKey]);
+
+  const tagBucket = (it: ActionItem): number => {
+    if (it.important && it.urgent) return 0;
+    if (it.urgent) return 1;
+    if (it.important) return 2;
+    return 3;
+  };
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
@@ -123,13 +266,15 @@ export function Board({ items, currentUser }: { items: ActionItem[]; currentUser
     for (const it of filtered) map[it.status].push(it);
     for (const s of STATUSES) {
       map[s].sort((a, b) => {
+        const tb = tagBucket(a) - tagBucket(b);
+        if (tb !== 0) return tb;
         const pr = PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority);
         if (pr !== 0) return pr;
         return ageDays(b.createdAt) - ageDays(a.createdAt);
       });
     }
     return map;
-  }, [filtered]);
+  }, [filtered, tagBucket]);
 
   const editingItem = items.find((x) => x.id === editingId) || null;
   const filtersActive =
@@ -143,6 +288,39 @@ export function Board({ items, currentUser }: { items: ActionItem[]; currentUser
 
   return (
     <div className="space-y-4">
+      {welcomeOpen && (
+        <WelcomeModal
+          userLabel={userLabel}
+          onClose={() => {
+            window.localStorage.setItem(`zao-cowork-welcome-v1:${storageUserKey}`, "1");
+            setWelcomeOpen(false);
+          }}
+          onTour={() => {
+            window.localStorage.setItem(`zao-cowork-welcome-v1:${storageUserKey}`, "1");
+            setWelcomeOpen(false);
+            setTourStep(0);
+            setTourOpen(true);
+          }}
+        />
+      )}
+      {tourOpen && (
+        <TourModal
+          step={tourStep}
+          onClose={() => setTourOpen(false)}
+          onBack={() => setTourStep((s) => Math.max(0, s - 1))}
+          onNext={() => setTourStep((s) => Math.min(TOUR_STEPS.length - 1, s + 1))}
+        />
+      )}
+      {dailyOpen && (
+        <DailyReminderModal
+          userLabel={userLabel}
+          items={items}
+          todayKey={todayKey}
+          storageUserKey={storageUserKey}
+          onClose={() => setDailyOpen(false)}
+        />
+      )}
+      {toast && <Toast title={toast.title} message={toast.message} onClose={() => setToast(null)} />}
       <FilterBar
         filters={filters}
         onChange={setFilters}
@@ -185,6 +363,7 @@ export function Board({ items, currentUser }: { items: ActionItem[]; currentUser
             status={activeMobileStatus}
             items={byStatus[activeMobileStatus]}
             onEdit={setEditingId}
+            currentUser={currentUser}
           />
         </div>
       </div>
@@ -192,7 +371,13 @@ export function Board({ items, currentUser }: { items: ActionItem[]; currentUser
       {/* desktop: 4 columns */}
       <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATUSES.map((s) => (
-          <Column key={s} status={s} items={byStatus[s]} onEdit={setEditingId} />
+          <Column
+            key={s}
+            status={s}
+            items={byStatus[s]}
+            onEdit={setEditingId}
+            currentUser={currentUser}
+          />
         ))}
       </div>
 
@@ -222,17 +407,17 @@ function FilterBar({
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
   const me = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-3">
       <div className="flex gap-2">
         <input
           value={filters.search}
           onChange={(e) => set({ search: e.target.value })}
           placeholder="Search title, notes, owner..."
-          className="flex-1 rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent"
+          className="flex-1 rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent"
         />
         <button
           onClick={onHelp}
-          className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/70 hover:bg-white/5"
+          className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/70 hover:bg-white/5"
           aria-label="Help"
           title="How to use"
         >
@@ -348,10 +533,12 @@ function Column({
   status,
   items,
   onEdit,
+  currentUser,
 }: {
   status: ActionStatus;
   items: ActionItem[];
   onEdit: (id: string) => void;
+  currentUser: string;
 }) {
   return (
     <div className="flex flex-col gap-2 min-w-0">
@@ -362,7 +549,7 @@ function Column({
         <span className="text-xs text-white/40">{items.length}</span>
       </div>
 
-      <QuickAddForm status={status} />
+      <QuickAddForm status={status} currentUser={currentUser} />
 
       <div className="flex flex-col gap-2">
         {items.map((it) => (
@@ -376,29 +563,103 @@ function Column({
   );
 }
 
-function QuickAddForm({ status }: { status: ActionStatus }) {
+function QuickAddForm({ status, currentUser }: { status: ActionStatus; currentUser: string }) {
   const [pending, start] = useTransition();
+  const defaultOwner = ((): Owner => {
+    const me = currentUser.trim().toLowerCase();
+    if (me === "zaal") return "Zaal";
+    if (me === "iman") return "Iman";
+    return "Both";
+  })();
+  const [important, setImportant] = useState(false);
+  const [urgent, setUrgent] = useState(false);
+  const [priority, setPriority] = useState<Priority>("P2");
+  const [owner, setOwner] = useState<Owner>(defaultOwner);
   return (
     <form
       action={(fd) => {
         fd.set("status", status);
         if (!fd.get("category")) fd.set("category", "Other");
+        fd.set("owner", owner);
+        fd.set("priority", priority);
+        if (important) fd.set("important", "1");
+        if (urgent) fd.set("urgent", "1");
         start(() => quickCreate(fd));
         const titleEl = document.querySelector<HTMLInputElement>(
           `input[data-quick-add="${status}"]`,
         );
         if (titleEl) titleEl.value = "";
+        setImportant(false);
+        setUrgent(false);
+        setPriority("P2");
+        setOwner(defaultOwner);
       }}
-      className="flex gap-1"
+      className="flex flex-col gap-1"
     >
-      <input
-        name="title"
-        data-quick-add={status}
-        placeholder="+ add item, press Enter"
-        className="flex-1 rounded-lg bg-black/30 border border-white/5 px-2.5 py-1.5 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent/60 focus:bg-black/50"
-        disabled={pending}
-        required
-      />
+      <div className="flex gap-1">
+        <input
+          name="title"
+          data-quick-add={status}
+          placeholder="+ add item, press Enter"
+          className="flex-1 rounded-lg bg-black/30 border border-white/5 px-2.5 py-1.5 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent/60 focus:bg-black/50"
+          disabled={pending}
+          required
+        />
+        <select
+          value={owner}
+          onChange={(e) => setOwner(e.target.value as Owner)}
+          className="rounded-lg bg-black/30 border border-white/10 px-2 py-1.5 text-sm text-white/80"
+          disabled={pending}
+          aria-label="Responsible"
+          title="Responsible"
+        >
+          {OWNERS.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as Priority)}
+          className="rounded-lg bg-black/30 border border-white/10 px-2 py-1.5 text-sm text-white/80"
+          disabled={pending}
+          aria-label="Priority"
+          title="Priority"
+        >
+          {PRIORITIES.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        <button
+          type="button"
+          onClick={() => setImportant((v) => !v)}
+          className={`px-2 py-1 rounded-md text-[11px] border transition ${
+            important
+              ? "border-yellow-400/60 bg-yellow-500/15 text-yellow-200"
+              : "border-white/10 text-white/55 hover:text-white/80 hover:bg-white/5"
+          }`}
+          disabled={pending}
+        >
+          Important
+        </button>
+        <button
+          type="button"
+          onClick={() => setUrgent((v) => !v)}
+          className={`px-2 py-1 rounded-md text-[11px] border transition ${
+            urgent
+              ? "border-red-400/60 bg-red-500/15 text-red-200"
+              : "border-white/10 text-white/55 hover:text-white/80 hover:bg-white/5"
+          }`}
+          disabled={pending}
+        >
+          Urgent
+        </button>
+      </div>
     </form>
   );
 }
@@ -450,6 +711,16 @@ function Card({ item, onEdit }: { item: ActionItem; onEdit: (id: string) => void
         >
           {ownerInitial(ownerStr)}
         </span>
+        {item.urgent && (
+          <span className="px-1.5 py-0.5 rounded text-[10px] border border-red-500/40 text-red-300 bg-red-500/10">
+            URGENT
+          </span>
+        )}
+        {item.important && (
+          <span className="px-1.5 py-0.5 rounded text-[10px] border border-yellow-500/40 text-yellow-200 bg-yellow-500/10">
+            IMPORTANT
+          </span>
+        )}
         <span
           className={`px-1.5 py-0.5 rounded text-[10px] border ${CATEGORY_COLOR[String(item.category)] || CATEGORY_COLOR.Other}`}
         >
@@ -607,6 +878,28 @@ function EditModal({
                   </option>
                 ))}
               </select>
+            </Field>
+            <Field label="Tags">
+              <div className="flex flex-wrap gap-2 pt-2">
+                <label className="inline-flex items-center gap-2 text-sm text-white/80">
+                  <input
+                    type="checkbox"
+                    name="important"
+                    defaultChecked={item.important}
+                    className="h-4 w-4"
+                  />
+                  Important
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-white/80">
+                  <input
+                    type="checkbox"
+                    name="urgent"
+                    defaultChecked={item.urgent}
+                    className="h-4 w-4"
+                  />
+                  Urgent
+                </label>
+              </div>
             </Field>
             <Field label="DMAIC phase">
               <select
@@ -774,6 +1067,259 @@ function HelpModal({ onClose }: { onClose: () => void }) {
           </li>
         </ul>
         <p className="mt-3 text-xs text-white/40">See SIX-SIGMA.md in the repo for full notes.</p>
+      </div>
+    </div>
+  );
+}
+
+function WelcomeModal({
+  userLabel,
+  onClose,
+  onTour,
+}: {
+  userLabel: string;
+  onClose: () => void;
+  onTour: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-zao-ink border border-white/10 rounded-2xl p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Hi {userLabel}</h2>
+          <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
+            ×
+          </button>
+        </div>
+        <p className="mt-2 text-sm text-white/70">
+          Welcome to The Zao Co-Works. Want a quick tour of the interface and features?
+        </p>
+        <div className="mt-4 flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 text-white/70"
+          >
+            Not now
+          </button>
+          <button
+            onClick={onTour}
+            className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
+          >
+            Yes, tour me
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TourModal({
+  step,
+  onClose,
+  onBack,
+  onNext,
+}: {
+  step: number;
+  onClose: () => void;
+  onBack: () => void;
+  onNext: () => void;
+}) {
+  const s = TOUR_STEPS[Math.max(0, Math.min(TOUR_STEPS.length - 1, step))];
+  const last = step >= TOUR_STEPS.length - 1;
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-zao-ink border border-white/10 rounded-2xl p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-white/45">
+            Tour {step + 1} / {TOUR_STEPS.length}
+          </div>
+          <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
+            ×
+          </button>
+        </div>
+        <h2 className="mt-2 text-base font-semibold">{s.title}</h2>
+        <ul className="mt-2 space-y-2 text-sm text-white/75 list-disc list-inside">
+          {s.lines.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
+        <div className="mt-5 flex items-center justify-between gap-2">
+          <button
+            onClick={onBack}
+            className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 text-white/70 disabled:opacity-40"
+            disabled={step === 0}
+          >
+            Back
+          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 text-white/70"
+            >
+              Close
+            </button>
+            <button
+              onClick={last ? onClose : onNext}
+              className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
+            >
+              {last ? "Done" : "Next"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DailyReminderModal({
+  userLabel,
+  items,
+  todayKey,
+  storageUserKey,
+  onClose,
+}: {
+  userLabel: string;
+  items: ActionItem[];
+  todayKey: string;
+  storageUserKey: string;
+  onClose: () => void;
+}) {
+  const mine = storageUserKey;
+  const openMine = items.filter((it) => {
+    if (it.status === "DONE") return false;
+    const o = String(it.owner).toLowerCase();
+    return o === mine || o === "both";
+  });
+  const overdueMine = openMine.filter((it) => {
+    const due = parseDueDate(it.due);
+    if (!due) return false;
+    const dueDay = due.toISOString().slice(0, 10);
+    return dueDay < todayKey;
+  });
+
+  const lastSeenKey = `zao-cowork-last-seen:${storageUserKey}`;
+  const lastSeenRaw = typeof window === "undefined" ? "" : window.localStorage.getItem(lastSeenKey) || "";
+  const lastSeenMs = lastSeenRaw ? new Date(lastSeenRaw).getTime() : 0;
+  const completedByCoworker = items.filter((it) => {
+    if (it.status !== "DONE") return false;
+    if (!it.completedAt) return false;
+    const doneMs = new Date(it.completedAt).getTime();
+    if (!Number.isFinite(doneMs) || doneMs <= lastSeenMs) return false;
+    const created = String(it.createdBy || "").toLowerCase();
+    const completedBy = String(it.completedBy || "").toLowerCase();
+    return created === mine && completedBy && completedBy !== mine;
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-zao-ink border border-white/10 rounded-2xl p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Daily check-in</h2>
+          <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
+            ×
+          </button>
+        </div>
+        <p className="mt-2 text-sm text-white/70">
+          Hey {userLabel}, here’s what’s waiting for you today.
+        </p>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
+            <div className="text-[10px] uppercase tracking-wider text-white/45">My open</div>
+            <div className="mt-0.5 text-xl font-bold leading-none">{openMine.length}</div>
+          </div>
+          <div className="rounded-xl bg-black/30 border border-red-500/25 px-3 py-2">
+            <div className="text-[10px] uppercase tracking-wider text-white/45">Overdue</div>
+            <div className="mt-0.5 text-xl font-bold leading-none text-red-200">
+              {overdueMine.length}
+            </div>
+          </div>
+          <div className="rounded-xl bg-black/30 border border-emerald-500/25 px-3 py-2">
+            <div className="text-[10px] uppercase tracking-wider text-white/45">Completed</div>
+            <div className="mt-0.5 text-xl font-bold leading-none text-emerald-200">
+              {completedByCoworker.length}
+            </div>
+          </div>
+        </div>
+        {overdueMine.length > 0 && (
+          <div className="mt-4">
+            <div className="text-xs uppercase tracking-wider text-white/45">Overdue tasks</div>
+            <ul className="mt-2 space-y-1 text-sm text-white/75">
+              {overdueMine.slice(0, 5).map((it) => (
+                <li key={it.id} className="flex items-baseline justify-between gap-3">
+                  <span className="truncate">{it.title}</span>
+                  <span className="text-xs text-white/45 whitespace-nowrap">{it.due}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {completedByCoworker.length > 0 && (
+          <div className="mt-4">
+            <div className="text-xs uppercase tracking-wider text-white/45">Updates</div>
+            <ul className="mt-2 space-y-1 text-sm text-white/75">
+              {completedByCoworker.slice(0, 5).map((it) => (
+                <li key={it.id} className="truncate">
+                  Completed by {it.completedBy || it.owner}: {it.title}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div className="mt-5 flex justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Toast({
+  title,
+  message,
+  onClose,
+}: {
+  title: string;
+  message: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const id = window.setTimeout(onClose, 7000);
+    return () => window.clearTimeout(id);
+  }, [onClose]);
+  return (
+    <div className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm">
+      <div className="rounded-2xl bg-zao-ink border border-white/10 shadow-2xl p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold">{title}</div>
+            <div className="mt-1 text-sm text-white/70">{message}</div>
+          </div>
+          <button onClick={onClose} className="text-white/50 hover:text-white text-lg leading-none">
+            ×
+          </button>
+        </div>
       </div>
     </div>
   );

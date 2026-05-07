@@ -28,12 +28,15 @@ export default async function Page() {
   const userLabel = user === "zaal" ? "Zaal" : "Iman";
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-6 space-y-5">
-      <header className="flex items-center justify-between gap-3">
+    <main className="min-h-screen relative text-white px-4 bg-[#041225] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.18),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.10),transparent_60%)]" />
+      <div className="relative max-w-7xl mx-auto py-6 space-y-5">
+      <header className="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.06] backdrop-blur-xl border border-white/10 px-5 py-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Iman x Zaal</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">The Zao Co-Works</h1>
           <p className="text-white/50 text-xs md:text-sm">
-            Action tracker. Updated {new Date(doc.updatedAt).toLocaleString()}
+            This is your shared action tracker with your co-worker. Updated{" "}
+            {new Date(doc.updatedAt).toLocaleString()}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -54,15 +57,18 @@ export default async function Page() {
         <Stat label="Done 7d" value={done7d} tone="ok" />
       </section>
 
-      <Board items={doc.items} currentUser={user} />
+      <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-3 md:p-4">
+        <Board items={doc.items} currentUser={user} />
+      </div>
 
-      <footer className="pt-6 text-xs text-white/30 border-t border-white/5">
+      <footer className="pt-6 text-xs text-white/30 border-t border-white/10">
         <a href="https://github.com/bettercallzaal/imanprojects" className="hover:text-white/60">
           source on github
         </a>
         {" - "}
         <span>see SIX-SIGMA.md + BACKLOG.md in repo for process + future phases</span>
       </footer>
+      </div>
     </main>
   );
 }
@@ -93,12 +99,14 @@ function Stat({
 }) {
   const toneCls =
     tone === "red"
-      ? "text-red-300 border-red-500/30"
+      ? "text-red-200 border-red-500/25"
       : tone === "warn"
-      ? "text-amber-300 border-amber-500/30"
+      ? "text-amber-200 border-amber-500/25"
       : "text-white border-white/10";
   return (
-    <div className={`rounded-xl bg-zao-ink/70 border ${toneCls} px-3 py-2.5`}>
+    <div
+      className={`rounded-2xl bg-white/[0.06] backdrop-blur-xl border ${toneCls} px-3 py-3`}
+    >
       <div className="text-[10px] uppercase tracking-wider text-white/50">{label}</div>
       <div className="mt-0.5 text-2xl font-bold leading-none">{value}</div>
       {hint && <div className="text-[10px] text-white/35 mt-0.5">{hint}</div>}
