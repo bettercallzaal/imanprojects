@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { getSession, verifyPassword, createSession } from "@/lib/auth";
+import ZaoLogo from "../../../ZAO LOGO.jpg";
 
 async function loginAction(formData: FormData): Promise<void> {
   "use server";
@@ -24,13 +26,23 @@ export default async function LoginPage({
   const error = sp.error === "1";
   const from = sp.from ?? "/";
   return (
-    <main className="min-h-screen flex items-center justify-center bg-zao-navy text-white px-4">
+    <main className="min-h-screen relative flex items-center justify-center text-white px-4 bg-[#041225] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.22),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.12),transparent_60%)]" />
       <form
         action={loginAction}
-        className="w-full max-w-sm space-y-5 rounded-2xl bg-zao-ink p-7 shadow-2xl border border-white/10"
+        className="relative w-full max-w-sm space-y-5 rounded-2xl bg-white/[0.06] backdrop-blur-xl p-8 shadow-2xl border border-white/10"
       >
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Iman x Zaal</h1>
+        <div className="text-center space-y-1">
+          <Image
+            src={ZaoLogo}
+            alt="The Zao logo"
+            priority
+            className="mx-auto w-56 h-auto select-none"
+          />
+          <div className="mt-2 text-4xl font-extrabold tracking-tight leading-none">
+            <span className="text-white">Co-</span>
+            <span className="text-yellow-400">Work</span>
+          </div>
           <p className="text-sm text-white/55">ZAO Devz action tracker</p>
         </div>
         <input type="hidden" name="from" value={from} />
@@ -41,7 +53,7 @@ export default async function LoginPage({
             type="password"
             autoFocus
             required
-            className="mt-1.5 w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2.5 text-white placeholder-white/30 focus:outline-none focus:border-zao-accent focus:ring-1 focus:ring-zao-accent/40"
+            className="mt-1.5 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2.5 text-white placeholder-white/30 focus:outline-none focus:border-zao-accent focus:ring-1 focus:ring-zao-accent/40"
             placeholder="enter password"
           />
         </label>
@@ -52,15 +64,12 @@ export default async function LoginPage({
         )}
         <button
           type="submit"
-          className="w-full rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2.5 font-medium transition"
+          className="w-full rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2.5 font-medium transition shadow-lg shadow-blue-500/20"
         >
           Sign in
         </button>
-        <div className="pt-2 border-t border-white/10 space-y-1.5 text-xs text-white/45">
-          <p>Two users: Zaal + Iman. Each has their own password.</p>
-          <p>
-            New here? Ask Zaal for ur password. Forgot it? Same.
-          </p>
+        <div className="pt-2 border-t border-white/10 space-y-1.5 text-xs text-white/45 text-center">
+          <p>Two users. One TaskBoard.</p>
         </div>
       </form>
     </main>

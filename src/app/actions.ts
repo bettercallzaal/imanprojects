@@ -31,29 +31,49 @@ function asCategory(v: unknown): string {
   const s = String(v ?? "Other").trim();
   return CATEGORIES.includes(s as (typeof CATEGORIES)[number]) ? s : "Other";
 }
+function asBool(v: unknown): boolean {
+  if (typeof v === "boolean") return v;
+  const s = String(v ?? "").trim().toLowerCase();
+  return s === "1" || s === "true" || s === "on" || s === "yes";
+}
 
-function readForm(form: FormData, id: string, prev?: ActionItem): ActionItem {
+function readForm(form: FormData, id: string, actor: string, prev?: ActionItem): ActionItem {
   const now = new Date().toISOString();
-  return normalizeItem({
+  const next = normalizeItem({
     id,
     title: String(form.get("title") ?? prev?.title ?? "").trim(),
+    createdBy: prev?.createdBy || actor,
     owner: String(form.get("owner") ?? prev?.owner ?? "Both").trim(),
     status: asStatus(form.get("status") ?? prev?.status),
     category: asCategory(form.get("category") ?? prev?.category),
     priority: asPriority(form.get("priority") ?? prev?.priority),
+    important: asBool(form.get("important") ?? prev?.important),
+    urgent: asBool(form.get("urgent") ?? prev?.urgent),
     phase: asPhase(form.get("phase") ?? prev?.phase),
     due: String(form.get("due") ?? prev?.due ?? "").trim(),
     notes: String(form.get("notes") ?? prev?.notes ?? "").trim(),
     createdAt: prev?.createdAt || now,
     updatedAt: now,
+    completedAt: prev?.completedAt || "",
+    completedBy: prev?.completedBy || "",
   });
+  if (prev) {
+    if (prev.status !== "DONE" && next.status === "DONE") {
+      next.completedAt = now;
+      next.completedBy = actor;
+    } else if (next.status !== "DONE") {
+      next.completedAt = "";
+      next.completedBy = "";
+    }
+  }
+  return next;
 }
 
 export async function createItem(form: FormData): Promise<void> {
   const user = await requireSession();
   const doc = await getActions();
   const id = newId(doc.items);
-  const item = readForm(form, id);
+  const item = readForm(form, id, user);
   if (!item.title) return;
   doc.items.push(item);
   await saveActions(doc, user, `add #${id} ${item.title.slice(0, 40)}`);
@@ -68,7 +88,7 @@ export async function quickCreate(form: FormData): Promise<void> {
   const id = newId(doc.items);
   const status = asStatus(form.get("status"));
   const category = asCategory(form.get("category"));
-  const item = readForm(form, id);
+  const item = readForm(form, id, user);
   item.title = title;
   item.status = status;
   item.category = category;
@@ -84,7 +104,7 @@ export async function updateItem(form: FormData): Promise<void> {
   const doc = await getActions();
   const idx = doc.items.findIndex((x) => x.id === id);
   if (idx < 0) return;
-  doc.items[idx] = readForm(form, id, doc.items[idx]);
+  doc.items[idx] = readForm(form, id, user, doc.items[idx]);
   await saveActions(doc, user, `edit #${id}`);
   revalidatePath("/");
 }
@@ -109,6 +129,13 @@ export async function patchField(form: FormData): Promise<void> {
       break;
     case "status":
       next.status = asStatus(value);
+      if (cur.status !== "DONE" && next.status === "DONE") {
+        next.completedAt = next.updatedAt;
+        next.completedBy = user;
+      } else if (next.status !== "DONE") {
+        next.completedAt = "";
+        next.completedBy = "";
+      }
       break;
     case "category":
       next.category = asCategory(value);

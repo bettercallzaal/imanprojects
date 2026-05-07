@@ -13,6 +13,20 @@ button, [role="button"], input, select, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+select {
+  color-scheme: dark;
+}
+
+select option,
+select optgroup {
+  background-color: #0b1220;
+  color: #f8fafc;
+}
+
+select option:disabled {
+  color: rgba(248, 250, 252, 0.5);
+}
+
 /* better scrollbar in dark */
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: transparent; }

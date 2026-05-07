@@ -31,10 +31,15 @@ export const OWNERS: Owner[] = ["Zaal", "Iman", "Both"];
 export type ActionItem = {
   id: string;
   title: string;
+  createdBy: string;
   owner: Owner | string;
   status: ActionStatus;
   category: Category | string;
   priority: Priority;
+  important: boolean;
+  urgent: boolean;
+  completedAt: string;
+  completedBy: string;
   phase: Phase;
   due: string;
   notes: string;
