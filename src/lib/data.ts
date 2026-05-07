@@ -68,8 +68,12 @@ function normalizeDoc(doc: ActionDoc): ActionDoc {
 }
 
 async function readLocal(): Promise<ActionDoc> {
-  const raw = await fs.readFile(LOCAL_PATH, "utf8");
-  return normalizeDoc(JSON.parse(raw) as ActionDoc);
+  try {
+    const raw = await fs.readFile(LOCAL_PATH, "utf8");
+    return normalizeDoc(JSON.parse(raw) as ActionDoc);
+  } catch {
+    return { updatedAt: nowIso(), items: [] };
+  }
 }
 
 async function writeLocal(doc: ActionDoc): Promise<void> {
