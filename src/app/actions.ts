@@ -78,6 +78,8 @@ export async function createItem(form: FormData): Promise<void> {
   doc.items.push(item);
   await saveActions(doc, user, `add #${id} ${item.title.slice(0, 40)}`);
   revalidatePath("/");
+  revalidatePath("/music");
+  revalidatePath("/marketing");
 }
 
 export async function quickCreate(form: FormData): Promise<void> {
@@ -95,6 +97,8 @@ export async function quickCreate(form: FormData): Promise<void> {
   doc.items.push(item);
   await saveActions(doc, user, `quick-add #${id} ${title.slice(0, 40)}`);
   revalidatePath("/");
+  revalidatePath("/music");
+  revalidatePath("/marketing");
 }
 
 export async function updateItem(form: FormData): Promise<void> {
@@ -107,6 +111,8 @@ export async function updateItem(form: FormData): Promise<void> {
   doc.items[idx] = readForm(form, id, user, doc.items[idx]);
   await saveActions(doc, user, `edit #${id}`);
   revalidatePath("/");
+  revalidatePath("/music");
+  revalidatePath("/marketing");
 }
 
 export async function patchField(form: FormData): Promise<void> {
@@ -158,6 +164,8 @@ export async function patchField(form: FormData): Promise<void> {
   doc.items[idx] = next;
   await saveActions(doc, user, `${field} #${id}`);
   revalidatePath("/");
+  revalidatePath("/music");
+  revalidatePath("/marketing");
 }
 
 export async function deleteItem(form: FormData): Promise<void> {
@@ -168,6 +176,8 @@ export async function deleteItem(form: FormData): Promise<void> {
   doc.items = doc.items.filter((x) => x.id !== id);
   await saveActions(doc, user, `delete #${id}`);
   revalidatePath("/");
+  revalidatePath("/music");
+  revalidatePath("/marketing");
 }
 
 export async function logout(): Promise<void> {

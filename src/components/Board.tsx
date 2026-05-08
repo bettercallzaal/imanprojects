@@ -49,13 +49,23 @@ const OWNER_BADGE: Record<string, string> = {
 };
 
 const CATEGORY_COLOR: Record<string, string> = {
+  // Dev
   "ZAO Devz": "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-  "WaveWarZ Zambia": "bg-orange-500/15 text-orange-300 border-orange-500/30",
-  Social: "bg-pink-500/15 text-pink-300 border-pink-500/30",
   "Site / Tech": "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-  Ops: "bg-gray-500/15 text-gray-300 border-gray-500/30",
-  Bounty: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
-  Other: "bg-slate-500/15 text-slate-300 border-slate-500/30",
+  Ops: "bg-slate-500/15 text-slate-300 border-slate-500/30",
+  Bounty: "bg-lime-500/15 text-lime-300 border-lime-500/30",
+  Other: "bg-gray-500/15 text-gray-300 border-gray-500/30",
+  // Music
+  "WaveWarZ Zambia": "bg-violet-500/15 text-violet-300 border-violet-500/30",
+  Recording: "bg-purple-500/15 text-purple-300 border-purple-500/30",
+  Distribution: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30",
+  Release: "bg-pink-500/15 text-pink-300 border-pink-500/30",
+  "Artist Onboarding": "bg-rose-500/15 text-rose-300 border-rose-500/30",
+  // Marketing
+  Social: "bg-orange-500/15 text-orange-300 border-orange-500/30",
+  Brand: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  Content: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
+  Campaigns: "bg-red-500/15 text-red-300 border-red-500/30",
 };
 
 function ownerInitial(o: string): string {
@@ -132,7 +142,17 @@ const TOUR_STEPS: Array<{ title: string; lines: string[] }> = [
   },
 ];
 
-export function Board({ items, currentUser }: { items: ActionItem[]; currentUser: string }) {
+export function Board({
+  items,
+  currentUser,
+  portalCategories,
+  defaultCategory,
+}: {
+  items: ActionItem[];
+  currentUser: string;
+  portalCategories: string[];
+  defaultCategory: string;
+}) {
   const router = useRouter();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [activeMobileStatus, setActiveMobileStatus] = useState<ActionStatus>("TODO");
@@ -326,6 +346,7 @@ export function Board({ items, currentUser }: { items: ActionItem[]; currentUser
         onChange={setFilters}
         currentUser={currentUser}
         onHelp={() => setHelpOpen(true)}
+        portalCategories={portalCategories}
       />
 
       {filtersActive && (
@@ -364,6 +385,7 @@ export function Board({ items, currentUser }: { items: ActionItem[]; currentUser
             items={byStatus[activeMobileStatus]}
             onEdit={setEditingId}
             currentUser={currentUser}
+            defaultCategory={defaultCategory}
           />
         </div>
       </div>
@@ -377,6 +399,7 @@ export function Board({ items, currentUser }: { items: ActionItem[]; currentUser
             items={byStatus[s]}
             onEdit={setEditingId}
             currentUser={currentUser}
+            defaultCategory={defaultCategory}
           />
         ))}
       </div>
@@ -398,11 +421,13 @@ function FilterBar({
   onChange,
   currentUser,
   onHelp,
+  portalCategories,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
   currentUser: string;
   onHelp: () => void;
+  portalCategories: string[];
 }) {
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
   const me = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
@@ -447,7 +472,7 @@ function FilterBar({
         <SelectPill
           value={filters.category}
           onChange={(v) => set({ category: v })}
-          options={["", ...CATEGORIES]}
+          options={["", ...portalCategories]}
           placeholder="Category"
         />
         <SelectPill
@@ -534,11 +559,13 @@ function Column({
   items,
   onEdit,
   currentUser,
+  defaultCategory,
 }: {
   status: ActionStatus;
   items: ActionItem[];
   onEdit: (id: string) => void;
   currentUser: string;
+  defaultCategory: string;
 }) {
   return (
     <div className="flex flex-col gap-2 min-w-0">
@@ -549,7 +576,7 @@ function Column({
         <span className="text-xs text-white/40">{items.length}</span>
       </div>
 
-      <QuickAddForm status={status} currentUser={currentUser} />
+      <QuickAddForm status={status} currentUser={currentUser} defaultCategory={defaultCategory} />
 
       <div className="flex flex-col gap-2">
         {items.map((it) => (
@@ -563,7 +590,7 @@ function Column({
   );
 }
 
-function QuickAddForm({ status, currentUser }: { status: ActionStatus; currentUser: string }) {
+function QuickAddForm({ status, currentUser, defaultCategory }: { status: ActionStatus; currentUser: string; defaultCategory: string }) {
   const [pending, start] = useTransition();
   const defaultOwner = ((): Owner => {
     const me = currentUser.trim().toLowerCase();
@@ -579,7 +606,7 @@ function QuickAddForm({ status, currentUser }: { status: ActionStatus; currentUs
     <form
       action={(fd) => {
         fd.set("status", status);
-        if (!fd.get("category")) fd.set("category", "Other");
+        if (!fd.get("category")) fd.set("category", defaultCategory);
         fd.set("owner", owner);
         fd.set("priority", priority);
         if (important) fd.set("important", "1");

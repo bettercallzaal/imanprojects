@@ -9,21 +9,29 @@ export const PHASES: Phase[] = ["Define", "Measure", "Analyze", "Improve", "Cont
 
 export type Category =
   | "ZAO Devz"
-  | "WaveWarZ Zambia"
-  | "Social"
   | "Site / Tech"
   | "Ops"
   | "Bounty"
-  | "Other";
+  | "Other"
+  | "WaveWarZ Zambia"
+  | "Recording"
+  | "Distribution"
+  | "Release"
+  | "Artist Onboarding"
+  | "Social"
+  | "Brand"
+  | "Content"
+  | "Campaigns";
+
 export const CATEGORIES: Category[] = [
-  "ZAO Devz",
-  "WaveWarZ Zambia",
-  "Social",
-  "Site / Tech",
-  "Ops",
-  "Bounty",
-  "Other",
+  "ZAO Devz", "Site / Tech", "Ops", "Bounty", "Other",
+  "WaveWarZ Zambia", "Recording", "Distribution", "Release", "Artist Onboarding",
+  "Social", "Brand", "Content", "Campaigns",
 ];
+
+export const DEV_CATEGORIES: string[] = ["ZAO Devz", "Site / Tech", "Ops", "Bounty", "Other"];
+export const MUSIC_CATEGORIES: string[] = ["WaveWarZ Zambia", "Recording", "Distribution", "Release", "Artist Onboarding"];
+export const MARKETING_CATEGORIES: string[] = ["Social", "Brand", "Content", "Campaigns"];
 
 export type Owner = "Zaal" | "Iman" | "Both";
 export const OWNERS: Owner[] = ["Zaal", "Iman", "Both"];
