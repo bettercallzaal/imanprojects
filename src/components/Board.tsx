@@ -594,21 +594,21 @@ function QuickAddForm({ status, currentUser }: { status: ActionStatus; currentUs
         setPriority("P2");
         setOwner(defaultOwner);
       }}
-      className="flex flex-col gap-1"
+      className="rounded-xl bg-black/20 border border-white/10 p-2"
     >
-      <div className="flex gap-1">
+      <div className="grid grid-cols-12 gap-2">
         <input
           name="title"
           data-quick-add={status}
-          placeholder="+ add item, press Enter"
-          className="flex-1 rounded-lg bg-black/30 border border-white/5 px-2.5 py-1.5 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent/60 focus:bg-black/50"
+          placeholder="+ add item"
+          className="col-span-12 lg:col-span-6 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent/60 focus:bg-black/50"
           disabled={pending}
           required
         />
         <select
           value={owner}
           onChange={(e) => setOwner(e.target.value as Owner)}
-          className="rounded-lg bg-black/30 border border-white/10 px-2 py-1.5 text-sm text-white/80"
+          className="col-span-6 lg:col-span-2 rounded-lg bg-black/30 border border-white/10 px-2 py-2 text-sm text-white/80"
           disabled={pending}
           aria-label="Responsible"
           title="Responsible"
@@ -622,7 +622,7 @@ function QuickAddForm({ status, currentUser }: { status: ActionStatus; currentUs
         <select
           value={priority}
           onChange={(e) => setPriority(e.target.value as Priority)}
-          className="rounded-lg bg-black/30 border border-white/10 px-2 py-1.5 text-sm text-white/80"
+          className="col-span-6 lg:col-span-1 rounded-lg bg-black/30 border border-white/10 px-2 py-2 text-sm text-white/80"
           disabled={pending}
           aria-label="Priority"
           title="Priority"
@@ -633,8 +633,15 @@ function QuickAddForm({ status, currentUser }: { status: ActionStatus; currentUs
             </option>
           ))}
         </select>
+        <button
+          type="submit"
+          className="col-span-12 lg:col-span-3 rounded-lg bg-zao-accent hover:bg-blue-500 px-3 py-2 text-sm font-medium transition disabled:opacity-60"
+          disabled={pending}
+        >
+          Enter task
+        </button>
       </div>
-      <div className="flex flex-wrap gap-1">
+      <div className="mt-2 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setImportant((v) => !v)}
@@ -1082,14 +1089,8 @@ function WelcomeModal({
   onTour: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md bg-zao-ink border border-white/10 rounded-2xl p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-x-0 bottom-0 z-50 p-4">
+      <div className="mx-auto w-full max-w-md bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Hi {userLabel}</h2>
           <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
@@ -1132,14 +1133,8 @@ function TourModal({
   const s = TOUR_STEPS[Math.max(0, Math.min(TOUR_STEPS.length - 1, step))];
   const last = step >= TOUR_STEPS.length - 1;
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md bg-zao-ink border border-white/10 rounded-2xl p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-x-0 bottom-0 z-50 p-4">
+      <div className="mx-auto w-full max-w-md bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[70vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="text-xs text-white/45">
             Tour {step + 1} / {TOUR_STEPS.length}
@@ -1222,14 +1217,8 @@ function DailyReminderModal({
   });
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md bg-zao-ink border border-white/10 rounded-2xl p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-x-0 bottom-0 z-50 p-4">
+      <div className="mx-auto w-full max-w-md bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[70vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Daily check-in</h2>
           <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
