@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-09T10:00:12.955Z",
+  "updatedAt": "2026-05-09T10:03:38.541Z",
   "items": [
     {
       "id": "1",
@@ -167,11 +167,11 @@
       "id": "10",
       "title": "Candy and Ohnahji onboarding to website",
       "createdBy": "iman",
-      "owner": "Both",
+      "owner": "Zaal",
       "status": "TODO",
       "category": "Other",
       "priority": "P2",
-      "important": false,
+      "important": true,
       "urgent": true,
       "completedAt": "",
       "completedBy": "",
@@ -179,7 +179,7 @@
       "due": "",
       "notes": "",
       "createdAt": "2026-05-08T06:25:03.723Z",
-      "updatedAt": "2026-05-08T06:25:03.723Z"
+      "updatedAt": "2026-05-09T10:03:38.541Z"
     },
     {
       "id": "11",
