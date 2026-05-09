@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-08T16:23:53.755Z",
+  "updatedAt": "2026-05-09T10:00:12.955Z",
   "items": [
     {
       "id": "1",
@@ -26,7 +26,7 @@
       "owner": "Both",
       "status": "DONE",
       "category": "ZAO Devz",
-      "priority": "P1",
+      "priority": "P2",
       "important": false,
       "urgent": false,
       "completedAt": "2026-05-08T06:21:09.814Z",
@@ -35,7 +35,7 @@
       "due": "Wed session",
       "notes": "Customer: builders evaluating ZAO\nWalk site together, list broken/confusing areas, prioritize fixes",
       "createdAt": "2026-05-06T00:00:00.000Z",
-      "updatedAt": "2026-05-08T06:21:09.814Z"
+      "updatedAt": "2026-05-09T10:00:12.955Z"
     },
     {
       "id": "3",
