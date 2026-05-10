@@ -323,7 +323,7 @@ export function Board({
           }}
         />
       )}
-      {tourOpen && (
+      {!welcomeOpen && tourOpen && (
         <TourModal
           step={tourStep}
           onClose={() => setTourOpen(false)}
@@ -331,7 +331,7 @@ export function Board({
           onNext={() => setTourStep((s) => Math.min(TOUR_STEPS.length - 1, s + 1))}
         />
       )}
-      {dailyOpen && (
+      {!welcomeOpen && !tourOpen && dailyOpen && (
         <DailyReminderModal
           userLabel={userLabel}
           items={items}
@@ -1116,8 +1116,8 @@ function WelcomeModal({
   onTour: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-4">
-      <div className="mx-auto w-full max-w-md bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Hi {userLabel}</h2>
           <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
@@ -1160,8 +1160,8 @@ function TourModal({
   const s = TOUR_STEPS[Math.max(0, Math.min(TOUR_STEPS.length - 1, step))];
   const last = step >= TOUR_STEPS.length - 1;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-4">
-      <div className="mx-auto w-full max-w-md bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[70vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="text-xs text-white/45">
             Tour {step + 1} / {TOUR_STEPS.length}
@@ -1244,8 +1244,8 @@ function DailyReminderModal({
   });
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-4">
-      <div className="mx-auto w-full max-w-md bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[70vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Daily check-in</h2>
           <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
@@ -1325,7 +1325,7 @@ function Toast({
     return () => window.clearTimeout(id);
   }, [onClose]);
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm">
+    <div className="fixed top-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm">
       <div className="rounded-2xl bg-zao-ink border border-white/10 shadow-2xl p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
