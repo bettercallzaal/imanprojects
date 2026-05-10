@@ -43,10 +43,15 @@ export function normalizeItem(
   return {
     id: raw.id,
     title: raw.title,
+    createdBy: (raw.createdBy as string) || "",
     owner: (raw.owner as string) || "Both",
     status: (raw.status as ActionStatus) || "TODO",
     category: (raw.category as string) || "Other",
     priority: (raw.priority as Priority) || "P2",
+    important: Boolean(raw.important),
+    urgent: Boolean(raw.urgent),
+    completedAt: (raw.completedAt as string) || "",
+    completedBy: (raw.completedBy as string) || "",
     phase: (raw.phase as Phase) || "Define",
     due: raw.due || "",
     notes: raw.notes || "",
@@ -63,8 +68,12 @@ function normalizeDoc(doc: ActionDoc): ActionDoc {
 }
 
 async function readLocal(): Promise<ActionDoc> {
-  const raw = await fs.readFile(LOCAL_PATH, "utf8");
-  return normalizeDoc(JSON.parse(raw) as ActionDoc);
+  try {
+    const raw = await fs.readFile(LOCAL_PATH, "utf8");
+    return normalizeDoc(JSON.parse(raw) as ActionDoc);
+  } catch {
+    return { updatedAt: nowIso(), items: [] };
+  }
 }
 
 async function writeLocal(doc: ActionDoc): Promise<void> {
