@@ -1,20 +1,20 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getActions, ageDays } from "@/lib/data";
-import { logout } from "./actions";
+import { logout } from "@/app/actions";
 import { Board } from "@/components/Board";
 import { NavBar } from "@/components/NavBar";
-import { DEV_CATEGORIES } from "@/lib/types";
+import { MUSIC_CATEGORIES } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
+export default async function MusicPage() {
   const user = await getSession();
   if (!user) redirect("/login");
   const doc = await getActions();
 
   const portalItems = doc.items.filter((x) =>
-    DEV_CATEGORIES.includes(String(x.category)),
+    MUSIC_CATEGORIES.includes(String(x.category)),
   );
 
   const open = portalItems.filter((x) => x.status !== "DONE");
@@ -34,8 +34,8 @@ export default async function Page() {
   const userLabel = user === "zaal" ? "Zaal" : "Iman";
 
   return (
-    <main className="min-h-screen relative text-white px-4 bg-[#041225] overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.18),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.10),transparent_60%)]" />
+    <main className="min-h-screen relative text-white px-4 bg-[#0a0418] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.18),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.10),transparent_60%)]" />
       <div className="relative max-w-7xl mx-auto py-6 space-y-4">
 
         <header className="flex flex-col gap-3 rounded-2xl bg-white/[0.06] backdrop-blur-xl border border-white/10 px-5 py-4">
@@ -68,15 +68,15 @@ export default async function Page() {
 
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="mb-4 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-400" />
-            <span className="text-sm font-semibold text-white/80">Dev Board</span>
-            <span className="text-xs text-white/40">— ZAO Devz · Site / Tech · Ops · Bounty</span>
+            <span className="h-2 w-2 rounded-full bg-purple-400" />
+            <span className="text-sm font-semibold text-white/80">Music Board</span>
+            <span className="text-xs text-white/40">— WaveWarZ · Recording · Distribution · Release · Artist Onboarding</span>
           </div>
           <Board
             items={portalItems}
             currentUser={user}
-            portalCategories={DEV_CATEGORIES}
-            defaultCategory="ZAO Devz"
+            portalCategories={MUSIC_CATEGORIES}
+            defaultCategory="WaveWarZ Zambia"
           />
         </div>
 
