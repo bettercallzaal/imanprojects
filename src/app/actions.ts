@@ -12,10 +12,16 @@ import {
   type ActionStatus,
   type Priority,
   type Phase,
+  type TaskType,
+  type Comment,
+  type TaskUpdate,
+  type ActivityEvent,
+  type ReviewStatus,
   STATUSES,
   PRIORITIES,
   PHASES,
   CATEGORIES,
+  TASK_TYPES,
 } from "@/lib/data";
 
 function asStatus(v: unknown): ActionStatus {
@@ -36,9 +42,34 @@ function asBool(v: unknown): boolean {
   const s = String(v ?? "").trim().toLowerCase();
   return s === "1" || s === "true" || s === "on" || s === "yes";
 }
+function asTaskType(v: unknown): TaskType | undefined {
+  return TASK_TYPES.includes(v as TaskType) ? (v as TaskType) : undefined;
+}
+
+function displayName(user: string): string {
+  return user.charAt(0).toUpperCase() + user.slice(1);
+}
+
+function makeActivity(
+  user: string,
+  action: string,
+  detail?: string,
+  at?: string,
+): ActivityEvent {
+  return {
+    id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    userId: user,
+    displayName: displayName(user),
+    action,
+    detail,
+    createdAt: at || new Date().toISOString(),
+  };
+}
 
 function readForm(form: FormData, id: string, actor: string, prev?: ActionItem): ActionItem {
   const now = new Date().toISOString();
+  const taskTypeRaw = form.get("taskType");
+  const hasApprovalField = form.get("_hasRequiresApproval") === "1";
   const next = normalizeItem({
     id,
     title: String(form.get("title") ?? prev?.title ?? "").trim(),
@@ -56,6 +87,16 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
     updatedAt: now,
     completedAt: prev?.completedAt || "",
     completedBy: prev?.completedBy || "",
+    // Operational fields
+    taskType: asTaskType(taskTypeRaw) ?? prev?.taskType,
+    requiresApproval: hasApprovalField
+      ? asBool(form.get("requiresApproval"))
+      : prev?.requiresApproval,
+    assignedTo: String(form.get("assignedTo") ?? prev?.assignedTo ?? "").trim() || undefined,
+    // Preserve operational data unchanged
+    comments: prev?.comments,
+    updates: prev?.updates,
+    activity: prev?.activity,
   });
   if (prev) {
     if (prev.status !== "DONE" && next.status === "DONE") {
@@ -69,17 +110,22 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
   return next;
 }
 
+function revalidateAll() {
+  revalidatePath("/");
+  revalidatePath("/music");
+  revalidatePath("/marketing");
+}
+
 export async function createItem(form: FormData): Promise<void> {
   const user = await requireSession();
   const doc = await getActions();
   const id = newId(doc.items);
   const item = readForm(form, id, user);
   if (!item.title) return;
+  item.activity = [makeActivity(user, "created", undefined, item.createdAt)];
   doc.items.push(item);
   await saveActions(doc, user, `add #${id} ${item.title.slice(0, 40)}`);
-  revalidatePath("/");
-  revalidatePath("/music");
-  revalidatePath("/marketing");
+  revalidateAll();
 }
 
 export async function quickCreate(form: FormData): Promise<void> {
@@ -94,11 +140,10 @@ export async function quickCreate(form: FormData): Promise<void> {
   item.title = title;
   item.status = status;
   item.category = category;
+  item.activity = [makeActivity(user, "created", undefined, item.createdAt)];
   doc.items.push(item);
   await saveActions(doc, user, `quick-add #${id} ${title.slice(0, 40)}`);
-  revalidatePath("/");
-  revalidatePath("/music");
-  revalidatePath("/marketing");
+  revalidateAll();
 }
 
 export async function updateItem(form: FormData): Promise<void> {
@@ -108,11 +153,18 @@ export async function updateItem(form: FormData): Promise<void> {
   const doc = await getActions();
   const idx = doc.items.findIndex((x) => x.id === id);
   if (idx < 0) return;
-  doc.items[idx] = readForm(form, id, user, doc.items[idx]);
+  const prev = doc.items[idx];
+  const next = readForm(form, id, user, prev);
+  // Log status change in activity
+  if (prev.status !== next.status) {
+    next.activity = [
+      ...(next.activity || []),
+      makeActivity(user, "status_changed", `${prev.status} → ${next.status}`),
+    ];
+  }
+  doc.items[idx] = next;
   await saveActions(doc, user, `edit #${id}`);
-  revalidatePath("/");
-  revalidatePath("/music");
-  revalidatePath("/marketing");
+  revalidateAll();
 }
 
 export async function patchField(form: FormData): Promise<void> {
@@ -133,7 +185,8 @@ export async function patchField(form: FormData): Promise<void> {
     case "owner":
       next.owner = value.trim() || "Both";
       break;
-    case "status":
+    case "status": {
+      const prevStatus = cur.status;
       next.status = asStatus(value);
       if (cur.status !== "DONE" && next.status === "DONE") {
         next.completedAt = next.updatedAt;
@@ -142,7 +195,14 @@ export async function patchField(form: FormData): Promise<void> {
         next.completedAt = "";
         next.completedBy = "";
       }
+      if (prevStatus !== next.status) {
+        next.activity = [
+          ...(cur.activity || []),
+          makeActivity(user, "status_changed", `${prevStatus} → ${next.status}`, next.updatedAt),
+        ];
+      }
       break;
+    }
     case "category":
       next.category = asCategory(value);
       break;
@@ -163,9 +223,7 @@ export async function patchField(form: FormData): Promise<void> {
   }
   doc.items[idx] = next;
   await saveActions(doc, user, `${field} #${id}`);
-  revalidatePath("/");
-  revalidatePath("/music");
-  revalidatePath("/marketing");
+  revalidateAll();
 }
 
 export async function deleteItem(form: FormData): Promise<void> {
@@ -175,9 +233,153 @@ export async function deleteItem(form: FormData): Promise<void> {
   const doc = await getActions();
   doc.items = doc.items.filter((x) => x.id !== id);
   await saveActions(doc, user, `delete #${id}`);
-  revalidatePath("/");
-  revalidatePath("/music");
-  revalidatePath("/marketing");
+  revalidateAll();
+}
+
+export async function addComment(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const id = String(form.get("id") ?? "");
+  const content = String(form.get("content") ?? "").trim();
+  if (!id || !content) return;
+  const doc = await getActions();
+  const idx = doc.items.findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  const now = new Date().toISOString();
+  const comment: Comment = {
+    id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    userId: user,
+    displayName: displayName(user),
+    content,
+    createdAt: now,
+  };
+  const item = doc.items[idx];
+  doc.items[idx] = {
+    ...item,
+    updatedAt: now,
+    comments: [...(item.comments || []), comment],
+    activity: [
+      ...(item.activity || []),
+      makeActivity(user, "commented", content.slice(0, 60), now),
+    ],
+  };
+  await saveActions(doc, user, `comment on #${id}`);
+  revalidateAll();
+}
+
+export async function submitUpdate(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const id = String(form.get("id") ?? "");
+  const content = String(form.get("content") ?? "").trim();
+  if (!id || !content) return;
+  const doc = await getActions();
+  const idx = doc.items.findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  const now = new Date().toISOString();
+  const item = doc.items[idx];
+  const requiresApproval = item.requiresApproval ?? false;
+  const toStatusRaw = form.get("toStatus");
+  const toStatus =
+    toStatusRaw && STATUSES.includes(toStatusRaw as ActionStatus)
+      ? (toStatusRaw as ActionStatus)
+      : undefined;
+  const update: TaskUpdate = {
+    id: `u-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    submittedBy: user,
+    displayName: displayName(user),
+    content,
+    fromStatus: item.status,
+    toStatus,
+    reviewStatus: requiresApproval ? "pending" : "approved",
+    createdAt: now,
+  };
+  let nextStatus = item.status;
+  let completedAt = item.completedAt;
+  let completedBy = item.completedBy;
+  if (!requiresApproval && toStatus) {
+    nextStatus = toStatus;
+    if (item.status !== "DONE" && toStatus === "DONE") {
+      completedAt = now;
+      completedBy = user;
+    } else if (toStatus !== "DONE") {
+      completedAt = "";
+      completedBy = "";
+    }
+  }
+  const activityDetail = `${requiresApproval ? "submitted for review" : "submitted update"}${toStatus ? ` → ${toStatus}` : ""}`;
+  doc.items[idx] = {
+    ...item,
+    status: nextStatus,
+    completedAt,
+    completedBy,
+    updatedAt: now,
+    updates: [...(item.updates || []), update],
+    activity: [
+      ...(item.activity || []),
+      makeActivity(user, "update_submitted", activityDetail, now),
+    ],
+  };
+  await saveActions(doc, user, `update #${id}`);
+  revalidateAll();
+}
+
+export async function reviewUpdate(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const id = String(form.get("id") ?? "");
+  const updateId = String(form.get("updateId") ?? "");
+  const decisionRaw = String(form.get("decision") ?? "");
+  const reviewNotes = String(form.get("reviewNotes") ?? "").trim();
+  const decision = (["approved", "rejected", "changes_requested"].includes(decisionRaw)
+    ? decisionRaw
+    : "rejected") as ReviewStatus;
+  if (!id || !updateId) return;
+  const doc = await getActions();
+  const idx = doc.items.findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  const now = new Date().toISOString();
+  const item = doc.items[idx];
+  const updates = (item.updates || []).map((u) => {
+    if (u.id !== updateId) return u;
+    return {
+      ...u,
+      reviewStatus: decision,
+      reviewedBy: user,
+      reviewedAt: now,
+      reviewNotes: reviewNotes || undefined,
+    };
+  });
+  const reviewed = updates.find((u) => u.id === updateId);
+  let nextStatus = item.status;
+  let completedAt = item.completedAt;
+  let completedBy = item.completedBy;
+  if (decision === "approved" && reviewed?.toStatus) {
+    nextStatus = reviewed.toStatus;
+    if (item.status !== "DONE" && reviewed.toStatus === "DONE") {
+      completedAt = now;
+      completedBy = user;
+    } else if (reviewed.toStatus !== "DONE") {
+      completedAt = "";
+      completedBy = "";
+    }
+  }
+  doc.items[idx] = {
+    ...item,
+    status: nextStatus,
+    completedAt,
+    completedBy,
+    updatedAt: now,
+    updates,
+    activity: [
+      ...(item.activity || []),
+      makeActivity(
+        user,
+        `review_${decision}`,
+        reviewNotes || decision,
+        now,
+      ),
+    ],
+  };
+  await saveActions(doc, user, `review #${id}`);
+  revalidateAll();
 }
 
 export async function logout(): Promise<void> {

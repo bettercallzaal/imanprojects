@@ -15,12 +15,8 @@ import {
   type Owner,
   type Priority,
 } from "@/lib/types";
-import {
-  quickCreate,
-  patchField,
-  updateItem,
-  deleteItem,
-} from "@/app/actions";
+import { quickCreate, patchField } from "@/app/actions";
+import { TaskRoom } from "./TaskRoom";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TODO: "TO DO",
@@ -49,19 +45,16 @@ const OWNER_BADGE: Record<string, string> = {
 };
 
 const CATEGORY_COLOR: Record<string, string> = {
-  // Dev
   "ZAO Devz": "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
   "Site / Tech": "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
   Ops: "bg-slate-500/15 text-slate-300 border-slate-500/30",
   Bounty: "bg-lime-500/15 text-lime-300 border-lime-500/30",
   Other: "bg-gray-500/15 text-gray-300 border-gray-500/30",
-  // Music
   "WaveWarZ Zambia": "bg-violet-500/15 text-violet-300 border-violet-500/30",
   Recording: "bg-purple-500/15 text-purple-300 border-purple-500/30",
   Distribution: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30",
   Release: "bg-pink-500/15 text-pink-300 border-pink-500/30",
   "Artist Onboarding": "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  // Marketing
   Social: "bg-orange-500/15 text-orange-300 border-orange-500/30",
   Brand: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   Content: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
@@ -108,36 +101,36 @@ const TOUR_STEPS: Array<{ title: string; lines: string[] }> = [
   {
     title: "Welcome to The Zao Co-Works",
     lines: [
-      "This is your shared action tracker with your co-worker.",
-      "You can add tasks, assign responsibility, set priority + tags, and track progress.",
+      "This is your shared operational workspace.",
+      "Add tasks, track progress, submit updates, and collaborate — all in one place.",
     ],
   },
   {
-    title: "Add tasks (fast)",
+    title: "Task Rooms",
     lines: [
-      "Use the “+ add item” box at the top of any column and press Enter.",
-      "Set Responsible, Priority, and Important/Urgent tags before submitting.",
+      "Click any task title to open its Task Room — a dedicated workspace for that task.",
+      "Inside you'll find the full history, comments, progress updates, and approval workflow.",
     ],
   },
   {
-    title: "Move tasks",
+    title: "Add tasks fast",
     lines: [
-      "Use the status dropdown on each card to move it across columns.",
-      "Mark a task DONE when it’s complete.",
+      'Use the "+ add item" box at the top of any column and press Enter.',
+      "Set owner, priority, and importance before submitting.",
     ],
   },
   {
-    title: "Edit details",
+    title: "Approve or reject updates",
     lines: [
-      "Click the task title or “edit” to open full edit mode.",
-      "Set owner, status, category, priority, tags, DMAIC phase, due date, and notes.",
+      "Workers can submit progress updates from inside a Task Room.",
+      "If approval is required, the update goes to the review queue for the lead to approve or reject.",
     ],
   },
   {
-    title: "Work smart",
+    title: "Stay organized",
     lines: [
-      "Use filters at the top (Mine, Aging, Owner, Category, Priority, DMAIC).",
-      "Tasks sort by tags first: Important+Urgent → Urgent → Important → others.",
+      "Use the filters at the top — Mine, Aging, Owner, Category, Priority, DMAIC.",
+      "Tasks sort by urgency/importance first, then priority, then age.",
     ],
   },
 ];
@@ -156,7 +149,7 @@ export function Board({
   const router = useRouter();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [activeMobileStatus, setActiveMobileStatus] = useState<ActionStatus>("TODO");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [taskRoomId, setTaskRoomId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -188,9 +181,9 @@ export function Board({
 
   useEffect(() => {
     const lastSeenKey = `zao-cowork-last-seen:${storageUserKey}`;
-    const lastSeenRaw = typeof window === "undefined" ? "" : window.localStorage.getItem(lastSeenKey) || "";
+    const lastSeenRaw =
+      typeof window === "undefined" ? "" : window.localStorage.getItem(lastSeenKey) || "";
     const lastSeenMs = lastSeenRaw ? new Date(lastSeenRaw).getTime() : 0;
-
     const mine = storageUserKey;
     const openMine = items.filter((it) => {
       if (it.status === "DONE") return false;
@@ -200,8 +193,7 @@ export function Board({
     const overdueMine = openMine.filter((it) => {
       const due = parseDueDate(it.due);
       if (!due) return false;
-      const dueDay = due.toISOString().slice(0, 10);
-      return dueDay < todayKey;
+      return due.toISOString().slice(0, 10) < todayKey;
     });
     const completedByCoworker = items.filter((it) => {
       if (it.status !== "DONE") return false;
@@ -212,10 +204,13 @@ export function Board({
       const completedBy = String(it.completedBy || "").toLowerCase();
       return created === mine && completedBy && completedBy !== mine;
     });
-
     const dailyKey = `zao-cowork-daily-v1:${storageUserKey}`;
-    const shownFor = typeof window === "undefined" ? "" : window.localStorage.getItem(dailyKey) || "";
-    if (shownFor !== todayKey && (openMine.length > 0 || overdueMine.length > 0 || completedByCoworker.length > 0)) {
+    const shownFor =
+      typeof window === "undefined" ? "" : window.localStorage.getItem(dailyKey) || "";
+    if (
+      shownFor !== todayKey &&
+      (openMine.length > 0 || overdueMine.length > 0 || completedByCoworker.length > 0)
+    ) {
       setDailyOpen(true);
       window.localStorage.setItem(dailyKey, todayKey);
     }
@@ -234,10 +229,7 @@ export function Board({
         const created = String(it.createdBy || "").toLowerCase();
         const completedBy = String(it.completedBy || "").toLowerCase();
         if (created === mine && completedBy && completedBy !== mine) {
-          setToast({
-            title: "Task completed",
-            message: `${it.owner} completed: ${it.title}`,
-          });
+          setToast({ title: "Task completed", message: `${it.owner} completed: ${it.title}` });
         }
       }
     }
@@ -296,7 +288,7 @@ export function Board({
     return map;
   }, [filtered, tagBucket]);
 
-  const editingItem = items.find((x) => x.id === editingId) || null;
+  const taskRoomItem = taskRoomId ? items.find((x) => x.id === taskRoomId) : null;
   const filtersActive =
     filters.search ||
     filters.owner ||
@@ -340,7 +332,10 @@ export function Board({
           onClose={() => setDailyOpen(false)}
         />
       )}
-      {toast && <Toast title={toast.title} message={toast.message} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast title={toast.title} message={toast.message} onClose={() => setToast(null)} />
+      )}
+
       <FilterBar
         filters={filters}
         onChange={setFilters}
@@ -361,7 +356,7 @@ export function Board({
         </div>
       )}
 
-      {/* mobile: status tabs + single column */}
+      {/* Mobile: status tabs + single column */}
       <div className="md:hidden">
         <div className="grid grid-cols-4 gap-1 rounded-lg bg-zao-ink p-1 border border-white/10">
           {STATUSES.map((s) => (
@@ -383,31 +378,33 @@ export function Board({
           <Column
             status={activeMobileStatus}
             items={byStatus[activeMobileStatus]}
-            onEdit={setEditingId}
+            onOpenRoom={setTaskRoomId}
             currentUser={currentUser}
             defaultCategory={defaultCategory}
           />
         </div>
       </div>
 
-      {/* desktop: 4 columns */}
+      {/* Desktop: 4 columns */}
       <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATUSES.map((s) => (
           <Column
             key={s}
             status={s}
             items={byStatus[s]}
-            onEdit={setEditingId}
+            onOpenRoom={setTaskRoomId}
             currentUser={currentUser}
             defaultCategory={defaultCategory}
           />
         ))}
       </div>
 
-      {editingItem && (
-        <EditModal
-          item={editingItem}
-          onClose={() => setEditingId(null)}
+      {/* Task Room */}
+      {taskRoomItem && (
+        <TaskRoom
+          item={taskRoomItem}
+          currentUser={currentUser}
+          onClose={() => setTaskRoomId(null)}
         />
       )}
 
@@ -449,7 +446,6 @@ function FilterBar({
           ?
         </button>
       </div>
-
       <div className="flex flex-wrap gap-1.5">
         <Pill
           active={filters.mineOnly}
@@ -503,11 +499,9 @@ function Pill({
   label: string;
   tone?: "red";
 }) {
-  const base =
-    "px-3 py-1 rounded-full text-xs border transition whitespace-nowrap";
+  const base = "px-3 py-1 rounded-full text-xs border transition whitespace-nowrap";
   const off = "border-white/10 text-white/60 hover:text-white hover:bg-white/5";
-  const onBlue =
-    "border-zao-accent/60 bg-zao-accent/15 text-blue-200";
+  const onBlue = "border-zao-accent/60 bg-zao-accent/15 text-blue-200";
   const onRed = "border-red-500/60 bg-red-500/15 text-red-200";
   const cls = active ? (tone === "red" ? onRed : onBlue) : off;
   return (
@@ -557,30 +551,45 @@ function SelectPill({
 function Column({
   status,
   items,
-  onEdit,
+  onOpenRoom,
   currentUser,
   defaultCategory,
 }: {
   status: ActionStatus;
   items: ActionItem[];
-  onEdit: (id: string) => void;
+  onOpenRoom: (id: string) => void;
   currentUser: string;
   defaultCategory: string;
 }) {
+  const pendingCount = items.reduce(
+    (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
+    0,
+  );
   return (
     <div className="flex flex-col gap-2 min-w-0">
       <div className={`flex items-baseline justify-between border-b pb-1 ${STATUS_HEAD[status]}`}>
         <h3 className="text-xs font-bold uppercase tracking-wider">
           {STATUS_LABEL[status]}
         </h3>
-        <span className="text-xs text-white/40">{items.length}</span>
+        <div className="flex items-center gap-2">
+          {pendingCount > 0 && (
+            <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 rounded-full">
+              {pendingCount} review
+            </span>
+          )}
+          <span className="text-xs text-white/40">{items.length}</span>
+        </div>
       </div>
 
-      <QuickAddForm status={status} currentUser={currentUser} defaultCategory={defaultCategory} />
+      <QuickAddForm
+        status={status}
+        currentUser={currentUser}
+        defaultCategory={defaultCategory}
+      />
 
       <div className="flex flex-col gap-2">
         {items.map((it) => (
-          <Card key={it.id} item={it} onEdit={onEdit} />
+          <Card key={it.id} item={it} onOpenRoom={onOpenRoom} />
         ))}
         {items.length === 0 && (
           <div className="text-xs text-white/30 italic px-1 py-2">No items.</div>
@@ -590,7 +599,15 @@ function Column({
   );
 }
 
-function QuickAddForm({ status, currentUser, defaultCategory }: { status: ActionStatus; currentUser: string; defaultCategory: string }) {
+function QuickAddForm({
+  status,
+  currentUser,
+  defaultCategory,
+}: {
+  status: ActionStatus;
+  currentUser: string;
+  defaultCategory: string;
+}) {
   const [pending, start] = useTransition();
   const defaultOwner = ((): Owner => {
     const me = currentUser.trim().toLowerCase();
@@ -602,6 +619,7 @@ function QuickAddForm({ status, currentUser, defaultCategory }: { status: Action
   const [urgent, setUrgent] = useState(false);
   const [priority, setPriority] = useState<Priority>("P2");
   const [owner, setOwner] = useState<Owner>(defaultOwner);
+
   return (
     <form
       action={(fd) => {
@@ -638,7 +656,6 @@ function QuickAddForm({ status, currentUser, defaultCategory }: { status: Action
           className="col-span-6 lg:col-span-2 rounded-lg bg-black/30 border border-white/10 px-2 py-2 text-sm text-white/80"
           disabled={pending}
           aria-label="Responsible"
-          title="Responsible"
         >
           {OWNERS.map((o) => (
             <option key={o} value={o}>
@@ -652,7 +669,6 @@ function QuickAddForm({ status, currentUser, defaultCategory }: { status: Action
           className="col-span-6 lg:col-span-1 rounded-lg bg-black/30 border border-white/10 px-2 py-2 text-sm text-white/80"
           disabled={pending}
           aria-label="Priority"
-          title="Priority"
         >
           {PRIORITIES.map((p) => (
             <option key={p} value={p}>
@@ -698,12 +714,21 @@ function QuickAddForm({ status, currentUser, defaultCategory }: { status: Action
   );
 }
 
-function Card({ item, onEdit }: { item: ActionItem; onEdit: (id: string) => void }) {
+function Card({
+  item,
+  onOpenRoom,
+}: {
+  item: ActionItem;
+  onOpenRoom: (id: string) => void;
+}) {
   const [pending, start] = useTransition();
   const age = ageDays(item.createdAt);
   const cyc = cycleDays(item.createdAt, item.updatedAt, item.status);
   const aging = item.status !== "DONE" && age > 14;
   const ownerStr = String(item.owner);
+  const commentCount = (item.comments || []).length;
+  const updateCount = (item.updates || []).length;
+  const pendingReviews = (item.updates || []).filter((u) => u.reviewStatus === "pending").length;
 
   function setField(field: string, value: string) {
     const fd = new FormData();
@@ -722,7 +747,7 @@ function Card({ item, onEdit }: { item: ActionItem; onEdit: (id: string) => void
       <div className="flex items-start gap-2">
         <button
           aria-label="Cycle priority"
-          title={`Priority ${item.priority} - click to cycle`}
+          title={`Priority ${item.priority} — click to cycle`}
           onClick={() => {
             const next =
               item.priority === "P1" ? "P2" : item.priority === "P2" ? "P3" : "P1";
@@ -731,7 +756,7 @@ function Card({ item, onEdit }: { item: ActionItem; onEdit: (id: string) => void
           className={`mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[item.priority]} hover:ring-2 ring-white/30`}
         />
         <button
-          onClick={() => onEdit(item.id)}
+          onClick={() => onOpenRoom(item.id)}
           className="flex-1 text-left font-medium leading-snug hover:underline decoration-white/30"
         >
           {item.title}
@@ -784,12 +809,10 @@ function Card({ item, onEdit }: { item: ActionItem; onEdit: (id: string) => void
       </div>
 
       {item.notes && (
-        <p className="mt-2 text-xs text-white/55 line-clamp-2 whitespace-pre-wrap">
-          {item.notes}
-        </p>
+        <p className="mt-2 text-xs text-white/55 line-clamp-2 whitespace-pre-wrap">{item.notes}</p>
       )}
 
-      <div className="mt-2 flex gap-1">
+      <div className="mt-2 flex gap-1 items-center">
         <select
           value={item.status}
           onChange={(e) => setField("status", e.target.value)}
@@ -803,242 +826,23 @@ function Card({ item, onEdit }: { item: ActionItem; onEdit: (id: string) => void
           ))}
         </select>
         <button
-          onClick={() => onEdit(item.id)}
-          className="text-[11px] rounded border border-white/10 px-2 py-1 text-white/70 hover:bg-white/5"
+          onClick={() => onOpenRoom(item.id)}
+          className="text-[11px] rounded border border-white/10 px-2 py-1 text-white/70 hover:bg-white/5 whitespace-nowrap"
         >
-          edit
+          open
         </button>
+        {/* Indicators */}
+        {pendingReviews > 0 && (
+          <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
+            {pendingReviews}
+          </span>
+        )}
+        {commentCount > 0 && (
+          <span className="text-[10px] text-white/35" title={`${commentCount} comment${commentCount > 1 ? "s" : ""}`}>
+            💬{commentCount}
+          </span>
+        )}
       </div>
-    </div>
-  );
-}
-
-function EditModal({
-  item,
-  onClose,
-}: {
-  item: ActionItem;
-  onClose: () => void;
-}) {
-  const [pending, start] = useTransition();
-  return (
-    <div
-      className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:max-w-lg bg-zao-ink border border-white/10 rounded-t-2xl md:rounded-2xl p-5 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold">
-            Edit item <span className="text-white/40">#{item.id}</span>
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white text-xl leading-none"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        <form
-          action={(fd) => {
-            fd.set("id", item.id);
-            start(() => updateItem(fd));
-            onClose();
-          }}
-          className="space-y-3"
-        >
-          <Field label="Title">
-            <input
-              name="title"
-              defaultValue={item.title}
-              className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm"
-              required
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Owner">
-              <select
-                name="owner"
-                defaultValue={String(item.owner)}
-                className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm"
-              >
-                {OWNERS.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Status">
-              <select
-                name="status"
-                defaultValue={item.status}
-                className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm"
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Category">
-              <select
-                name="category"
-                defaultValue={String(item.category)}
-                className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Priority">
-              <select
-                name="priority"
-                defaultValue={item.priority}
-                className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Tags">
-              <div className="flex flex-wrap gap-2 pt-2">
-                <label className="inline-flex items-center gap-2 text-sm text-white/80">
-                  <input
-                    type="checkbox"
-                    name="important"
-                    defaultChecked={item.important}
-                    className="h-4 w-4"
-                  />
-                  Important
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm text-white/80">
-                  <input
-                    type="checkbox"
-                    name="urgent"
-                    defaultChecked={item.urgent}
-                    className="h-4 w-4"
-                  />
-                  Urgent
-                </label>
-              </div>
-            </Field>
-            <Field label="DMAIC phase">
-              <select
-                name="phase"
-                defaultValue={item.phase}
-                className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm"
-              >
-                {PHASES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Due">
-              <input
-                name="due"
-                defaultValue={item.due}
-                placeholder="2026-05-13 or 'Wed session'"
-                className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm"
-              />
-            </Field>
-          </div>
-
-          <Field label="Notes (Customer / success criteria / measurements)">
-            <textarea
-              name="notes"
-              defaultValue={item.notes}
-              rows={4}
-              className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm"
-            />
-          </Field>
-
-          <div className="flex items-center justify-between pt-2">
-            <DeleteButton id={item.id} onDone={onClose} />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5"
-                disabled={pending}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
-                disabled={pending}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs text-white/60">{label}</span>
-      <div className="mt-1">{children}</div>
-    </label>
-  );
-}
-
-function DeleteButton({ id, onDone }: { id: string; onDone: () => void }) {
-  const [pending, start] = useTransition();
-  const [confirm, setConfirm] = useState(false);
-  if (!confirm) {
-    return (
-      <button
-        type="button"
-        onClick={() => setConfirm(true)}
-        className="text-xs text-red-400 hover:text-red-300"
-      >
-        Delete
-      </button>
-    );
-  }
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="text-red-300">Sure?</span>
-      <button
-        type="button"
-        onClick={() => {
-          const fd = new FormData();
-          fd.set("id", id);
-          start(() => deleteItem(fd));
-          onDone();
-        }}
-        className="rounded border border-red-500/40 text-red-300 hover:bg-red-500/10 px-2 py-1"
-        disabled={pending}
-      >
-        Yes, delete
-      </button>
-      <button
-        type="button"
-        onClick={() => setConfirm(false)}
-        className="text-white/50 hover:text-white/80"
-      >
-        cancel
-      </button>
     </div>
   );
 }
@@ -1064,34 +868,35 @@ function HelpModal({ onClose }: { onClose: () => void }) {
         </div>
         <ol className="space-y-2 text-sm text-white/80 list-decimal list-inside">
           <li>
+            <b className="text-white">Task Rooms</b>: Click any task title or "open" to enter its
+            dedicated workspace — history, comments, approvals all in one place.
+          </li>
+          <li>
             <b className="text-white">Add items</b>: type in the "+ add item" box at top of any
             column, press Enter.
           </li>
           <li>
-            <b className="text-white">Move items</b>: click the status dropdown on a card to
-            change column.
+            <b className="text-white">Move items</b>: use the status dropdown on a card, or
+            submit a progress update from inside the Task Room.
+          </li>
+          <li>
+            <b className="text-white">Approval workflow</b>: enable "Require Approval" on a task
+            so updates go to review before the status changes.
           </li>
           <li>
             <b className="text-white">Set priority</b>: click the colored dot on the left of any
-            card to cycle P1 {"->"} P2 {"->"} P3.
-          </li>
-          <li>
-            <b className="text-white">Edit details</b>: click the title or "edit" to open full
-            edit (owner, category, due, notes, etc).
+            card to cycle P1 → P2 → P3.
           </li>
           <li>
             <b className="text-white">Filter</b>: use the chips at top. "Mine" shows what's on
             you. "Aging" shows items open more than 14 days.
           </li>
-          <li>
-            <b className="text-white">Mobile</b>: tap the status tabs at top to switch column.
-          </li>
         </ol>
         <h3 className="mt-4 text-xs uppercase tracking-wider text-white/40">Six Sigma cheat</h3>
         <ul className="mt-1 space-y-1 text-xs text-white/70 list-disc list-inside">
           <li>
-            <b className="text-white">DMAIC phase</b>: Define -&gt; Measure -&gt; Analyze -&gt;
-            Improve -&gt; Control. Quick tasks can stay on Define.
+            <b className="text-white">DMAIC phase</b>: Define → Measure → Analyze → Improve →
+            Control.
           </li>
           <li>
             <b className="text-white">Notes template</b>: Customer / Success / Measurement.
@@ -1100,7 +905,6 @@ function HelpModal({ onClose }: { onClose: () => void }) {
             <b className="text-white">WIP limit</b>: aim for 5 active items per person max.
           </li>
         </ul>
-        <p className="mt-3 text-xs text-white/40">See SIX-SIGMA.md in the repo for full notes.</p>
       </div>
     </div>
   );
@@ -1120,12 +924,16 @@ function WelcomeModal({
       <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Hi {userLabel}</h2>
-          <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
+          <button
+            onClick={onClose}
+            className="text-white/50 hover:text-white text-xl leading-none"
+          >
             ×
           </button>
         </div>
         <p className="mt-2 text-sm text-white/70">
-          Welcome to The Zao Co-Works. Want a quick tour of the interface and features?
+          Welcome to The Zao Co-Works — your operational workspace. Click any task to open its
+          dedicated room with comments, history, and the approval workflow.
         </p>
         <div className="mt-4 flex gap-2 justify-end">
           <button
@@ -1166,7 +974,10 @@ function TourModal({
           <div className="text-xs text-white/45">
             Tour {step + 1} / {TOUR_STEPS.length}
           </div>
-          <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
+          <button
+            onClick={onClose}
+            className="text-white/50 hover:text-white text-xl leading-none"
+          >
             ×
           </button>
         </div>
@@ -1226,12 +1037,11 @@ function DailyReminderModal({
   const overdueMine = openMine.filter((it) => {
     const due = parseDueDate(it.due);
     if (!due) return false;
-    const dueDay = due.toISOString().slice(0, 10);
-    return dueDay < todayKey;
+    return due.toISOString().slice(0, 10) < todayKey;
   });
-
   const lastSeenKey = `zao-cowork-last-seen:${storageUserKey}`;
-  const lastSeenRaw = typeof window === "undefined" ? "" : window.localStorage.getItem(lastSeenKey) || "";
+  const lastSeenRaw =
+    typeof window === "undefined" ? "" : window.localStorage.getItem(lastSeenKey) || "";
   const lastSeenMs = lastSeenRaw ? new Date(lastSeenRaw).getTime() : 0;
   const completedByCoworker = items.filter((it) => {
     if (it.status !== "DONE") return false;
@@ -1242,20 +1052,27 @@ function DailyReminderModal({
     const completedBy = String(it.completedBy || "").toLowerCase();
     return created === mine && completedBy && completedBy !== mine;
   });
+  const pendingReviews = items.reduce(
+    (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
+    0,
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Daily check-in</h2>
-          <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">
+          <button
+            onClick={onClose}
+            className="text-white/50 hover:text-white text-xl leading-none"
+          >
             ×
           </button>
         </div>
         <p className="mt-2 text-sm text-white/70">
-          Hey {userLabel}, here’s what’s waiting for you today.
+          Hey {userLabel}, here's what's waiting for you today.
         </p>
-        <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid grid-cols-4 gap-2">
           <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
             <div className="text-[10px] uppercase tracking-wider text-white/45">My open</div>
             <div className="mt-0.5 text-xl font-bold leading-none">{openMine.length}</div>
@@ -1267,9 +1084,15 @@ function DailyReminderModal({
             </div>
           </div>
           <div className="rounded-xl bg-black/30 border border-emerald-500/25 px-3 py-2">
-            <div className="text-[10px] uppercase tracking-wider text-white/45">Completed</div>
+            <div className="text-[10px] uppercase tracking-wider text-white/45">Done</div>
             <div className="mt-0.5 text-xl font-bold leading-none text-emerald-200">
               {completedByCoworker.length}
+            </div>
+          </div>
+          <div className={`rounded-xl bg-black/30 border ${pendingReviews > 0 ? "border-amber-500/30" : "border-white/10"} px-3 py-2`}>
+            <div className="text-[10px] uppercase tracking-wider text-white/45">Reviews</div>
+            <div className={`mt-0.5 text-xl font-bold leading-none ${pendingReviews > 0 ? "text-amber-200" : ""}`}>
+              {pendingReviews}
             </div>
           </div>
         </div>
@@ -1332,7 +1155,10 @@ function Toast({
             <div className="text-sm font-semibold">{title}</div>
             <div className="mt-1 text-sm text-white/70">{message}</div>
           </div>
-          <button onClick={onClose} className="text-white/50 hover:text-white text-lg leading-none">
+          <button
+            onClick={onClose}
+            className="text-white/50 hover:text-white text-lg leading-none"
+          >
             ×
           </button>
         </div>
