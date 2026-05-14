@@ -78,6 +78,7 @@ export function normalizeItem(
   if (raw.taskType !== undefined) base.taskType = raw.taskType as TaskType;
   if (raw.requiresApproval !== undefined) base.requiresApproval = raw.requiresApproval;
   if (raw.assignedTo !== undefined) base.assignedTo = raw.assignedTo;
+  if (raw.claimable !== undefined) base.claimable = raw.claimable;
   if (raw.comments !== undefined) base.comments = raw.comments;
   if (raw.updates !== undefined) base.updates = raw.updates;
   if (raw.activity !== undefined) base.activity = raw.activity;

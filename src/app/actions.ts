@@ -382,6 +382,147 @@ export async function reviewUpdate(form: FormData): Promise<void> {
   revalidateAll();
 }
 
+export async function todoProcess(
+  form: FormData,
+): Promise<{ created: number; updated: number }> {
+  const user = await requireSession();
+  const raw = String(form.get("actions") ?? "[]");
+  type TodoAction =
+    | {
+        type: "create";
+        title: string;
+        owner: string | null;
+        status: ActionStatus;
+        priority: Priority;
+        notes: string;
+        claimable: boolean;
+      }
+    | { type: "update_status"; itemId: string; newStatus: ActionStatus }
+    | { type: "add_note"; itemId: string; note: string };
+
+  let todoActions: TodoAction[];
+  try {
+    todoActions = JSON.parse(raw) as TodoAction[];
+  } catch {
+    return { created: 0, updated: 0 };
+  }
+
+  const doc = await getActions();
+  let created = 0;
+  let updated = 0;
+  const now = new Date().toISOString();
+
+  for (const action of todoActions) {
+    if (action.type === "create") {
+      const id = newId(doc.items);
+      const ownerVal = action.owner ?? "Both";
+      const item = normalizeItem({
+        id,
+        title: action.title,
+        createdBy: user,
+        owner: ownerVal,
+        status: action.status,
+        category: "Other",
+        priority: action.priority,
+        important: false,
+        urgent: action.priority === "P1",
+        phase: "Define",
+        due: "",
+        notes: action.notes || "",
+        createdAt: now,
+        updatedAt: now,
+        completedAt: "",
+        completedBy: "",
+        claimable: action.claimable,
+      });
+      item.activity = [makeActivity(user, "created", "via Todo", now)];
+      if (!item.claimable) delete item.claimable;
+      doc.items.push(item);
+      created++;
+    } else if (action.type === "update_status") {
+      const idx = doc.items.findIndex((x) => x.id === action.itemId);
+      if (idx >= 0) {
+        const cur = doc.items[idx];
+        const prevStatus = cur.status;
+        let completedAt = cur.completedAt;
+        let completedBy = cur.completedBy;
+        if (prevStatus !== "DONE" && action.newStatus === "DONE") {
+          completedAt = now;
+          completedBy = user;
+        } else if (action.newStatus !== "DONE") {
+          completedAt = "";
+          completedBy = "";
+        }
+        doc.items[idx] = {
+          ...cur,
+          status: action.newStatus,
+          completedAt,
+          completedBy,
+          updatedAt: now,
+          activity: [
+            ...(cur.activity || []),
+            makeActivity(
+              user,
+              "status_changed",
+              `${prevStatus} → ${action.newStatus} (via Todo)`,
+              now,
+            ),
+          ],
+        };
+        updated++;
+      }
+    } else if (action.type === "add_note") {
+      const idx = doc.items.findIndex((x) => x.id === action.itemId);
+      if (idx >= 0) {
+        const cur = doc.items[idx];
+        const sep = cur.notes ? "\n\n" : "";
+        doc.items[idx] = {
+          ...cur,
+          notes: cur.notes + sep + action.note,
+          updatedAt: now,
+          activity: [
+            ...(cur.activity || []),
+            makeActivity(user, "commented", "Note added via Todo", now),
+          ],
+        };
+        updated++;
+      }
+    }
+  }
+
+  if (created > 0 || updated > 0) {
+    await saveActions(doc, user, `todo: +${created} created, ~${updated} updated`);
+    revalidateAll();
+  }
+
+  return { created, updated };
+}
+
+export async function claimTask(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const id = String(form.get("id") ?? "");
+  if (!id) return;
+  const doc = await getActions();
+  const idx = doc.items.findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  const cur = doc.items[idx];
+  const ownerName =
+    user === "zaal" ? "Zaal" : user === "iman" ? "Iman" : displayName(user);
+  const now = new Date().toISOString();
+  doc.items[idx] = {
+    ...cur,
+    owner: ownerName,
+    claimable: false,
+    updatedAt: now,
+    activity: [
+      ...(cur.activity || []),
+      makeActivity(user, "claimed", `Claimed by ${ownerName}`, now),
+    ],
+  };
+  await saveActions(doc, user, `claim #${id} by ${user}`);
+  revalidateAll();
+}
+
 export async function logout(): Promise<void> {
   await destroySession();
   redirect("/login");

@@ -220,7 +220,7 @@ function DetailsPanel({
             name="title"
             defaultValue={item.title}
             required
-            className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-black/50 transition"
+            className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition"
           />
         </div>
 
@@ -290,7 +290,7 @@ function DetailsPanel({
               name="due"
               defaultValue={item.due}
               placeholder="YYYY-MM-DD"
-              className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-blue-500/50 transition"
+              className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition"
             />
           </FormField>
 
@@ -321,7 +321,7 @@ function DetailsPanel({
             name="notes"
             defaultValue={item.notes}
             rows={5}
-            className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm resize-none focus:outline-none focus:border-blue-500/50 transition"
+            className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500/50 transition"
           />
         </FormField>
 
@@ -538,7 +538,7 @@ function SubmitUpdateBox({ item, currentUser }: { item: ActionItem; currentUser:
           <select
             value={toStatus}
             onChange={(e) => setToStatus(e.target.value as ActionStatus | "")}
-            className="flex-1 rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white/65 focus:outline-none"
+            className="flex-1 rounded-lg bg-[#0b1220] border border-white/10 px-2.5 py-1.5 text-xs text-white/80 focus:outline-none"
           >
             <option value="">Move to status (optional)</option>
             {STATUSES.filter((s) => s !== item.status).map((s) => (
@@ -624,7 +624,7 @@ function ReviewCard({ item, update }: { item: ActionItem; update: TaskUpdate }) 
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Review note (optional)"
-        className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-xs placeholder-white/25 focus:outline-none focus:border-white/20"
+        className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/25"
       />
       <div className="flex gap-2">
         <button
@@ -814,4 +814,4 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 }
 
 const selectCls =
-  "w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-blue-500/50 transition";
+  "w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition";

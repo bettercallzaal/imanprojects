@@ -109,6 +109,7 @@ export type ActionItem = {
   taskType?: TaskType;
   requiresApproval?: boolean;
   assignedTo?: string;
+  claimable?: boolean;
   comments?: Comment[];
   updates?: TaskUpdate[];
   activity?: ActivityEvent[];

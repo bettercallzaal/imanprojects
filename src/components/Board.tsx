@@ -15,8 +15,9 @@ import {
   type Owner,
   type Priority,
 } from "@/lib/types";
-import { quickCreate, patchField } from "@/app/actions";
+import { quickCreate, patchField, claimTask } from "@/app/actions";
 import { TaskRoom } from "./TaskRoom";
+import { TodoPanel, TodoTrigger } from "./TodoPanel";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TODO: "TO DO",
@@ -150,6 +151,7 @@ export function Board({
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [activeMobileStatus, setActiveMobileStatus] = useState<ActionStatus>("TODO");
   const [taskRoomId, setTaskRoomId] = useState<string | null>(null);
+  const [todoOpen, setTodoOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -289,6 +291,7 @@ export function Board({
   }, [filtered, tagBucket]);
 
   const taskRoomItem = taskRoomId ? items.find((x) => x.id === taskRoomId) : null;
+  const claimableCount = items.filter((it) => it.claimable).length;
   const filtersActive =
     filters.search ||
     filters.owner ||
@@ -409,6 +412,16 @@ export function Board({
       )}
 
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+
+      <TodoPanel
+        items={items}
+        open={todoOpen}
+        onClose={() => setTodoOpen(false)}
+      />
+      <TodoTrigger
+        onClick={() => setTodoOpen(true)}
+        claimableCount={claimableCount}
+      />
     </div>
   );
 }
@@ -435,7 +448,7 @@ function FilterBar({
           value={filters.search}
           onChange={(e) => set({ search: e.target.value })}
           placeholder="Search title, notes, owner..."
-          className="flex-1 rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent"
+          className="flex-1 rounded-xl bg-[#0b1220] border border-white/10 px-3 py-2 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent text-white"
         />
         <button
           onClick={onHelp}
@@ -532,8 +545,8 @@ function SelectPill({
       onChange={(e) => onChange(e.target.value)}
       className={`rounded-full text-xs px-3 py-1 border whitespace-nowrap ${
         value
-          ? "border-zao-accent/60 bg-zao-accent/15 text-blue-200"
-          : "border-white/10 bg-transparent text-white/60"
+          ? "border-zao-accent/60 bg-[#0d2040] text-blue-200"
+          : "border-white/10 bg-[#0b1625] text-white/60"
       }`}
     >
       <option value="">{placeholder}</option>
@@ -646,14 +659,14 @@ function QuickAddForm({
           name="title"
           data-quick-add={status}
           placeholder="+ add item"
-          className="col-span-12 lg:col-span-6 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent/60 focus:bg-black/50"
+          className="col-span-12 lg:col-span-6 rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-zao-accent/60"
           disabled={pending}
           required
         />
         <select
           value={owner}
           onChange={(e) => setOwner(e.target.value as Owner)}
-          className="col-span-6 lg:col-span-2 rounded-lg bg-black/30 border border-white/10 px-2 py-2 text-sm text-white/80"
+          className="col-span-6 lg:col-span-2 rounded-lg bg-[#0b1220] border border-white/10 px-2 py-2 text-sm text-white/80"
           disabled={pending}
           aria-label="Responsible"
         >
@@ -666,7 +679,7 @@ function QuickAddForm({
         <select
           value={priority}
           onChange={(e) => setPriority(e.target.value as Priority)}
-          className="col-span-6 lg:col-span-1 rounded-lg bg-black/30 border border-white/10 px-2 py-2 text-sm text-white/80"
+          className="col-span-6 lg:col-span-1 rounded-lg bg-[#0b1220] border border-white/10 px-2 py-2 text-sm text-white/80"
           disabled={pending}
           aria-label="Priority"
         >
@@ -727,7 +740,6 @@ function Card({
   const aging = item.status !== "DONE" && age > 14;
   const ownerStr = String(item.owner);
   const commentCount = (item.comments || []).length;
-  const updateCount = (item.updates || []).length;
   const pendingReviews = (item.updates || []).filter((u) => u.reviewStatus === "pending").length;
 
   function setField(field: string, value: string) {
@@ -736,6 +748,12 @@ function Card({
     fd.set("field", field);
     fd.set("value", value);
     start(() => patchField(fd));
+  }
+
+  function handleClaim() {
+    const fd = new FormData();
+    fd.set("id", item.id);
+    start(() => claimTask(fd));
   }
 
   return (
@@ -764,12 +782,18 @@ function Card({
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <span
-          className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${OWNER_BADGE[ownerStr] || OWNER_BADGE.Both}`}
-          title={`Owner: ${ownerStr}`}
-        >
-          {ownerInitial(ownerStr)}
-        </span>
+        {item.claimable ? (
+          <span className="px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border border-amber-500/50 bg-amber-500/15 text-amber-300 font-bold">
+            CLAIM
+          </span>
+        ) : (
+          <span
+            className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${OWNER_BADGE[ownerStr] || OWNER_BADGE.Both}`}
+            title={`Owner: ${ownerStr}`}
+          >
+            {ownerInitial(ownerStr)}
+          </span>
+        )}
         {item.urgent && (
           <span className="px-1.5 py-0.5 rounded text-[10px] border border-red-500/40 text-red-300 bg-red-500/10">
             URGENT
@@ -816,7 +840,7 @@ function Card({
         <select
           value={item.status}
           onChange={(e) => setField("status", e.target.value)}
-          className="flex-1 text-[11px] rounded bg-black/30 border border-white/10 px-1.5 py-1"
+          className="flex-1 text-[11px] rounded bg-[#0b1220] border border-white/10 px-1.5 py-1 text-white/80"
           disabled={pending}
         >
           {STATUSES.map((s) => (
@@ -832,6 +856,15 @@ function Card({
           open
         </button>
         {/* Indicators */}
+        {item.claimable && (
+          <button
+            onClick={handleClaim}
+            disabled={pending}
+            className="text-[11px] rounded border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 px-2 py-1 whitespace-nowrap transition disabled:opacity-50 font-medium"
+          >
+            Claim
+          </button>
+        )}
         {pendingReviews > 0 && (
           <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
             {pendingReviews}
