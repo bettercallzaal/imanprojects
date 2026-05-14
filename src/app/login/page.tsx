@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import { getSession, verifyPassword, createSession } from "@/lib/auth";
+import { PasswordInput } from "@/components/PasswordInput";
 import ZaoLogo from "../../../ZAO LOGO.jpg";
 
 async function loginAction(formData: FormData): Promise<void> {
@@ -48,14 +49,9 @@ export default async function LoginPage({
         <input type="hidden" name="from" value={from} />
         <label className="block">
           <span className="text-xs uppercase tracking-wider text-white/60">Password</span>
-          <input
-            name="password"
-            type="password"
-            autoFocus
-            required
-            className="mt-1.5 w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2.5 text-white placeholder-white/30 focus:outline-none focus:border-zao-accent focus:ring-1 focus:ring-zao-accent/40"
-            placeholder="enter password"
-          />
+          <div className="mt-1.5">
+            <PasswordInput />
+          </div>
         </label>
         {error && (
           <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
