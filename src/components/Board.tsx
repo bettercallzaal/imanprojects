@@ -42,6 +42,7 @@ const PRIORITY_DOT: Record<Priority, string> = {
 const OWNER_BADGE: Record<string, string> = {
   Zaal: "bg-blue-500/20 text-blue-300 border-blue-500/40",
   Iman: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+  ThyRev: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
   Both: "bg-slate-500/20 text-slate-200 border-slate-500/40",
 };
 
@@ -65,6 +66,7 @@ const CATEGORY_COLOR: Record<string, string> = {
 function ownerInitial(o: string): string {
   if (!o) return "?";
   if (o === "Both") return "Z+I";
+  if (o === "ThyRev") return "TR";
   return o.slice(0, 1).toUpperCase();
 }
 
@@ -165,6 +167,8 @@ export function Board({
       ? "Zaal"
       : currentUser.trim().toLowerCase() === "iman"
       ? "Iman"
+      : currentUser.trim().toLowerCase() === "thyrev"
+      ? "ThyRev"
       : currentUser;
   const storageUserKey = userLabel.trim().toLowerCase() || "user";
   const todayKey = new Date().toISOString().slice(0, 10);
@@ -292,6 +296,7 @@ export function Board({
 
   const taskRoomItem = taskRoomId ? items.find((x) => x.id === taskRoomId) : null;
   const claimableCount = items.filter((it) => it.claimable).length;
+  const isWorker = currentUser.trim().toLowerCase() === "thyrev";
   const filtersActive =
     filters.search ||
     filters.owner ||
@@ -384,6 +389,7 @@ export function Board({
             onOpenRoom={setTaskRoomId}
             currentUser={currentUser}
             defaultCategory={defaultCategory}
+            isWorker={isWorker}
           />
         </div>
       </div>
@@ -398,6 +404,7 @@ export function Board({
             onOpenRoom={setTaskRoomId}
             currentUser={currentUser}
             defaultCategory={defaultCategory}
+            isWorker={isWorker}
           />
         ))}
       </div>
@@ -567,12 +574,14 @@ function Column({
   onOpenRoom,
   currentUser,
   defaultCategory,
+  isWorker,
 }: {
   status: ActionStatus;
   items: ActionItem[];
   onOpenRoom: (id: string) => void;
   currentUser: string;
   defaultCategory: string;
+  isWorker: boolean;
 }) {
   const pendingCount = items.reduce(
     (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
@@ -598,11 +607,12 @@ function Column({
         status={status}
         currentUser={currentUser}
         defaultCategory={defaultCategory}
+        isWorker={isWorker}
       />
 
       <div className="flex flex-col gap-2">
         {items.map((it) => (
-          <Card key={it.id} item={it} onOpenRoom={onOpenRoom} />
+          <Card key={it.id} item={it} onOpenRoom={onOpenRoom} isWorker={isWorker} />
         ))}
         {items.length === 0 && (
           <div className="text-xs text-white/30 italic px-1 py-2">No items.</div>
@@ -616,16 +626,19 @@ function QuickAddForm({
   status,
   currentUser,
   defaultCategory,
+  isWorker,
 }: {
   status: ActionStatus;
   currentUser: string;
   defaultCategory: string;
+  isWorker: boolean;
 }) {
   const [pending, start] = useTransition();
   const defaultOwner = ((): Owner => {
     const me = currentUser.trim().toLowerCase();
     if (me === "zaal") return "Zaal";
     if (me === "iman") return "Iman";
+    if (me === "thyrev") return "ThyRev";
     return "Both";
   })();
   const [important, setImportant] = useState(false);
@@ -730,9 +743,11 @@ function QuickAddForm({
 function Card({
   item,
   onOpenRoom,
+  isWorker,
 }: {
   item: ActionItem;
   onOpenRoom: (id: string) => void;
+  isWorker: boolean;
 }) {
   const [pending, start] = useTransition();
   const age = ageDays(item.createdAt);
@@ -843,7 +858,7 @@ function Card({
           className="flex-1 text-[11px] rounded bg-[#0b1220] border border-white/10 px-1.5 py-1 text-white/80"
           disabled={pending}
         >
-          {STATUSES.map((s) => (
+          {STATUSES.filter((s) => !(isWorker && s === "DONE")).map((s) => (
             <option key={s} value={s}>
               {STATUS_LABEL[s]}
             </option>

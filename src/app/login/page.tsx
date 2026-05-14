@@ -53,7 +53,7 @@ export default async function LoginPage({
             type="password"
             autoFocus
             required
-            className="mt-1.5 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2.5 text-white placeholder-white/30 focus:outline-none focus:border-zao-accent focus:ring-1 focus:ring-zao-accent/40"
+            className="mt-1.5 w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2.5 text-white placeholder-white/30 focus:outline-none focus:border-zao-accent focus:ring-1 focus:ring-zao-accent/40"
             placeholder="enter password"
           />
         </label>
@@ -69,7 +69,7 @@ export default async function LoginPage({
           Sign in
         </button>
         <div className="pt-2 border-t border-white/10 space-y-1.5 text-xs text-white/45 text-center">
-          <p>Two users. One TaskBoard.</p>
+          <p>Team workspace — sign in with your password.</p>
         </div>
       </form>
     </main>

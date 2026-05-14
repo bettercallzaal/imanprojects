@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { destroySession, requireSession } from "@/lib/auth";
+import { destroySession, requireSession, isLead } from "@/lib/auth";
 import {
   getActions,
   saveActions,
@@ -187,7 +187,10 @@ export async function patchField(form: FormData): Promise<void> {
       break;
     case "status": {
       const prevStatus = cur.status;
-      next.status = asStatus(value);
+      const newStatus = asStatus(value);
+      // Workers cannot directly mark DONE — must go through review
+      if (!isLead(user) && newStatus === "DONE") return;
+      next.status = newStatus;
       if (cur.status !== "DONE" && next.status === "DONE") {
         next.completedAt = next.updatedAt;
         next.completedBy = user;
@@ -228,6 +231,7 @@ export async function patchField(form: FormData): Promise<void> {
 
 export async function deleteItem(form: FormData): Promise<void> {
   const user = await requireSession();
+  if (!isLead(user)) return;
   const id = String(form.get("id") ?? "");
   if (!id) return;
   const doc = await getActions();
@@ -276,7 +280,8 @@ export async function submitUpdate(form: FormData): Promise<void> {
   if (idx < 0) return;
   const now = new Date().toISOString();
   const item = doc.items[idx];
-  const requiresApproval = item.requiresApproval ?? false;
+  // Workers always require approval regardless of item setting
+  const requiresApproval = !isLead(user) ? true : (item.requiresApproval ?? false);
   const toStatusRaw = form.get("toStatus");
   const toStatus =
     toStatusRaw && STATUSES.includes(toStatusRaw as ActionStatus)
@@ -324,6 +329,7 @@ export async function submitUpdate(form: FormData): Promise<void> {
 
 export async function reviewUpdate(form: FormData): Promise<void> {
   const user = await requireSession();
+  if (!isLead(user)) return;
   const id = String(form.get("id") ?? "");
   const updateId = String(form.get("updateId") ?? "");
   const decisionRaw = String(form.get("decision") ?? "");

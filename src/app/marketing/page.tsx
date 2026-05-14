@@ -32,7 +32,7 @@ export default async function MarketingPage() {
     return Date.now() - d < 7 * 24 * 60 * 60 * 1000;
   }).length;
 
-  const userLabel = user === "zaal" ? "Zaal" : "Iman";
+  const userLabel = user === "zaal" ? "Zaal" : user === "iman" ? "Iman" : "ThyRev";
 
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#150a00] overflow-hidden">

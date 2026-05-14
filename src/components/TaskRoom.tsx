@@ -55,6 +55,8 @@ function userAvatar(userId: string, displayName: string, size = "h-7 w-7 text-xs
       ? "bg-blue-600/40 text-blue-200"
       : userId === "iman"
       ? "bg-purple-600/40 text-purple-200"
+      : userId === "thyrev"
+      ? "bg-emerald-600/40 text-emerald-200"
       : "bg-slate-600/40 text-slate-200";
   return (
     <div
