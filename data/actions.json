@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-08T16:23:53.755Z",
+  "updatedAt": "2026-05-13T23:01:10.902Z",
   "items": [
     {
       "id": "1",
@@ -26,7 +26,7 @@
       "owner": "Both",
       "status": "DONE",
       "category": "ZAO Devz",
-      "priority": "P1",
+      "priority": "P2",
       "important": false,
       "urgent": false,
       "completedAt": "2026-05-08T06:21:09.814Z",
@@ -35,7 +35,7 @@
       "due": "Wed session",
       "notes": "Customer: builders evaluating ZAO\nWalk site together, list broken/confusing areas, prioritize fixes",
       "createdAt": "2026-05-06T00:00:00.000Z",
-      "updatedAt": "2026-05-08T06:21:09.814Z"
+      "updatedAt": "2026-05-09T10:00:12.955Z"
     },
     {
       "id": "3",
@@ -167,19 +167,19 @@
       "id": "10",
       "title": "Candy and Ohnahji onboarding to website",
       "createdBy": "iman",
-      "owner": "Both",
+      "owner": "Zaal",
       "status": "TODO",
       "category": "Other",
       "priority": "P2",
-      "important": false,
+      "important": true,
       "urgent": true,
       "completedAt": "",
       "completedBy": "",
       "phase": "Define",
       "due": "",
-      "notes": "",
+      "notes": "on hold",
       "createdAt": "2026-05-08T06:25:03.723Z",
-      "updatedAt": "2026-05-08T06:25:03.723Z"
+      "updatedAt": "2026-05-13T19:01:34.967Z"
     },
     {
       "id": "11",
@@ -204,7 +204,7 @@
       "title": "Fix ui for Zao Nexus",
       "createdBy": "iman",
       "owner": "Iman",
-      "status": "TODO",
+      "status": "WIP",
       "category": "Other",
       "priority": "P2",
       "important": true,
@@ -213,9 +213,63 @@
       "completedBy": "",
       "phase": "Define",
       "due": "",
-      "notes": "",
+      "notes": "waiting for review",
       "createdAt": "2026-05-08T16:23:53.755Z",
-      "updatedAt": "2026-05-08T16:23:53.755Z"
+      "updatedAt": "2026-05-11T14:19:33.566Z"
+    },
+    {
+      "id": "13",
+      "title": "Add app store section to ZaoDevs website",
+      "createdBy": "iman",
+      "owner": "Iman",
+      "status": "TODO",
+      "category": "Social",
+      "priority": "P1",
+      "important": true,
+      "urgent": true,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "",
+      "createdAt": "2026-05-10T12:22:30.459Z",
+      "updatedAt": "2026-05-10T12:22:30.459Z"
+    },
+    {
+      "id": "14",
+      "title": "Be Real, research so we can add to farcaster",
+      "createdBy": "iman",
+      "owner": "Iman",
+      "status": "TODO",
+      "category": "ZAO Devz",
+      "priority": "P2",
+      "important": false,
+      "urgent": true,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "",
+      "createdAt": "2026-05-11T14:15:52.056Z",
+      "updatedAt": "2026-05-11T14:15:52.056Z"
+    },
+    {
+      "id": "15",
+      "title": "Add songs to google drive",
+      "createdBy": "iman",
+      "owner": "Both",
+      "status": "TODO",
+      "category": "WaveWarZ Zambia",
+      "priority": "P2",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "",
+      "createdAt": "2026-05-13T23:01:10.902Z",
+      "updatedAt": "2026-05-13T23:01:10.902Z"
     }
   ]
 }
